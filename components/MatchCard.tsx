@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Match, isKickoffPast, getKickoffUTC } from "@/lib/matches";
+import { Match, isKickoffPast, getDeadlineUTC, getMatchKickoffUTC } from "@/lib/matches";
 import { Prediction, Result, getResultLabel } from "@/lib/scoring";
 import Flag from "@/components/Flag";
 
@@ -79,7 +79,8 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
   const [justSaved, setJustSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const prevSaving = useRef(saving);
-  const deadline = getKickoffUTC(match);
+  const deadline = getDeadlineUTC(match);
+  const kickoffDate = getMatchKickoffUTC(match);
   const msLeft = useCountdown(deadline);
 
   useEffect(() => {
@@ -182,22 +183,22 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
               </div>
             </div>
 
-            {/* Date */}
-            <span className="text-xs text-gray-400">
-              {getKickoffUTC(match).toLocaleString("es-MX", {
+            {/* Kickoff time */}
+            <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
+              ⚽ {kickoffDate.toLocaleString("es-MX", {
                 timeZone: "America/Monterrey",
                 day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
-              })}
+              })} hrs
             </span>
 
-            {/* Countdown — only show when open and closing within 7 days */}
+            {/* Countdown to prediction deadline — only show when open and closing within 7 days */}
             {canPredict && msLeft > 0 && msLeft < 7 * 24 * 60 * 60 * 1000 && (
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
                 msLeft < 3600_000 ? "bg-red-100 text-red-600" :
                 msLeft < 24 * 3600_000 ? "bg-orange-100 text-orange-600" :
                 "bg-blue-50 text-blue-600"
               }`}>
-                ⏱ {formatCountdown(msLeft)}
+                🔒 cierra en {formatCountdown(msLeft)}
               </span>
             )}
 

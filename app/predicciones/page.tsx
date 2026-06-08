@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 import { MATCHES, STAGE_LABELS, GROUP_STAGES, KNOCKOUT_STAGES, Stage } from "@/lib/matches";
+import Flag from "@/components/Flag";
 import { Prediction, Result, getResultLabel } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
 
@@ -74,8 +75,12 @@ export default function PrediccionesPage() {
               <div key={match.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 {/* Match row */}
                 <div className={`px-4 py-3 flex items-center justify-between gap-3 ${result ? "bg-gray-800" : "bg-gray-50 border-b border-gray-100"}`}>
-                  <span className={`font-semibold text-sm flex-1 min-w-0 truncate ${result ? "text-white" : "text-gray-700"}`}>
-                    {match.homeFlag} {match.homeTeam} — {match.awayTeam} {match.awayFlag}
+                  <span className={`font-semibold text-sm flex-1 min-w-0 flex items-center gap-1.5 truncate ${result ? "text-white" : "text-gray-700"}`}>
+                    <Flag code={match.homeFlag} size={16} />
+                    <span className="truncate">{match.homeTeam}</span>
+                    <span className="opacity-50 shrink-0">—</span>
+                    <span className="truncate">{match.awayTeam}</span>
+                    <Flag code={match.awayFlag} size={16} />
                   </span>
                   {result ? (
                     <span className="font-mono font-bold text-lg text-white shrink-0">{result.g1}–{result.g2}</span>

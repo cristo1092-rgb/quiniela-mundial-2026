@@ -29,6 +29,11 @@ export function isKickoffPast(match: Match): boolean {
   return Date.now() >= getDeadlineUTC(match).getTime();
 }
 
+/** Returns the actual match kickoff time in UTC, using match.time (HH:MM) in Monterrey (GMT-6). */
+export function getMatchKickoffUTC(match: Match): Date {
+  return new Date(`${match.date}T${match.time}:00-06:00`);
+}
+
 /** @deprecated use getDeadlineUTC */
 export const getKickoffUTC = getDeadlineUTC;
 
