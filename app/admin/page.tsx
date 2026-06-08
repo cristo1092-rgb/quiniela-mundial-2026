@@ -38,6 +38,9 @@ export default function AdminPage() {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [playerMsg, setPlayerMsg] = useState("");
 
+  // Payments
+  const [payments, setPayments] = useState<Record<string, { paid: boolean; paidAt?: number }>>({});
+
   // Knockout team editor
   const [koMatchId, setKoMatchId] = useState("");
   const [koHome, setKoHome] = useState("");
@@ -77,6 +80,15 @@ export default function AdminPage() {
     const handler = () => setResults(getLocalResults());
     window.addEventListener("storage", handler);
     return () => window.removeEventListener("storage", handler);
+  }, [authed]);
+
+  // Load payments
+  useEffect(() => {
+    if (!authed || !isFirebaseConfigured()) return;
+    const unsub = onValue(ref(db, "payments"), (snap) => {
+      setPayments(snap.val() ?? {});
+    });
+    return unsub;
   }, [authed]);
 
   // Load players list
@@ -192,6 +204,16 @@ export default function AdminPage() {
       try { await remove(ref(db, `allowedPlayers/${name}`)); } catch { /* ok */ }
     }
     setPlayers((prev) => prev.filter((p) => p.name !== name));
+  }
+
+  async function handleTogglePayment(name: string) {
+    const current = payments[name];
+    const nowPaid = !current?.paid;
+    const entry = nowPaid ? { paid: true, paidAt: Date.now() } : { paid: false };
+    setPayments((prev) => ({ ...prev, [name]: entry }));
+    if (isFirebaseConfigured()) {
+      try { await set(ref(db, `payments/${name}`), entry); } catch { /* ok */ }
+    }
   }
 
   async function handleResetPin(name: string) {
@@ -583,6 +605,122 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </div>
+        );
+      })()}
+
+      {/* ── Payment checklist ──────────────────────────────────────────── */}
+      {players.length > 0 && (() => {
+        const ENTRY_FEE = 500;
+        const paidPlayers = players.filter((p) => payments[p.name]?.paid);
+        const unpaidPlayers = players.filter((p) => !payments[p.name]?.paid);
+        const total = paidPlayers.length * ENTRY_FEE;
+        const prize1 = Math.round(total * 0.70);
+        const prize2 = Math.round(total * 0.20);
+        const prize3 = Math.round(total * 0.10);
+
+        return (
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h3 className="font-bold text-gray-800">Control de pagos</h3>
+                <p className="text-sm text-gray-500 mt-0.5">Marca a cada jugador cuando confirmes su transferencia.</p>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-2xl font-black text-green-700">${total.toLocaleString("es-MX")}</div>
+                <div className="text-xs text-gray-400">{paidPlayers.length}/{players.length} pagaron</div>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="w-full bg-gray-100 rounded-full h-2 mb-5">
+              <div
+                className="bg-green-500 h-2 rounded-full transition-all"
+                style={{ width: players.length > 0 ? `${(paidPlayers.length / players.length) * 100}%` : "0%" }}
+              />
+            </div>
+
+            {/* Prize breakdown */}
+            {paidPlayers.length > 0 && (
+              <div className="grid grid-cols-3 gap-2 mb-5 text-center">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                  <div className="text-lg">🥇</div>
+                  <div className="font-bold text-yellow-700 text-sm">${prize1.toLocaleString("es-MX")}</div>
+                  <div className="text-xs text-gray-400">70%</div>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                  <div className="text-lg">🥈</div>
+                  <div className="font-bold text-gray-600 text-sm">${prize2.toLocaleString("es-MX")}</div>
+                  <div className="text-xs text-gray-400">20%</div>
+                </div>
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                  <div className="text-lg">🥉</div>
+                  <div className="font-bold text-amber-600 text-sm">${prize3.toLocaleString("es-MX")}</div>
+                  <div className="text-xs text-gray-400">10%</div>
+                </div>
+              </div>
+            )}
+
+            {/* Player list */}
+            <div className="space-y-2">
+              {unpaidPlayers.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-1">
+                    ⚠️ Pendientes ({unpaidPlayers.length})
+                  </p>
+                  {unpaidPlayers
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((player) => (
+                      <div key={player.name} className="flex items-center justify-between bg-red-50 border border-red-100 rounded-lg px-4 py-2.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2.5 h-2.5 rounded-full bg-red-300 flex-shrink-0" />
+                          <span className="font-medium text-gray-800">{player.name}</span>
+                          <span className="text-xs text-red-400">Sin pago</span>
+                        </div>
+                        <button
+                          onClick={() => handleTogglePayment(player.name)}
+                          className="text-xs font-bold bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          ✓ Marcar pagado
+                        </button>
+                      </div>
+                    ))}
+                </>
+              )}
+
+              {paidPlayers.length > 0 && (
+                <>
+                  <p className="text-xs font-semibold text-green-600 uppercase tracking-wide mt-3 mb-1">
+                    ✓ Pagados ({paidPlayers.length})
+                  </p>
+                  {paidPlayers
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map((player) => {
+                      const paidAt = payments[player.name]?.paidAt;
+                      return (
+                        <div key={player.name} className="flex items-center justify-between bg-green-50 border border-green-100 rounded-lg px-4 py-2.5">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2.5 h-2.5 rounded-full bg-green-500 flex-shrink-0" />
+                            <span className="font-medium text-gray-800">{player.name}</span>
+                            {paidAt && (
+                              <span className="text-xs text-gray-400">
+                                {new Date(paidAt).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleTogglePayment(player.name)}
+                            className="text-xs text-gray-400 hover:text-red-500 transition-colors px-2 py-1"
+                            title="Desmarcar pago"
+                          >
+                            Desmarcar
+                          </button>
+                        </div>
+                      );
+                    })}
+                </>
+              )}
+            </div>
           </div>
         );
       })()}
