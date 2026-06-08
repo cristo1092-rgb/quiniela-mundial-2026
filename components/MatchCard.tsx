@@ -226,18 +226,45 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
           </div>
         </div>
 
-        {/* Vote distribution bar */}
+        {/* Vote distribution */}
         {votes && votes.total > 0 && (
-          <div className="mt-2 px-1">
-            <div className="flex rounded-full overflow-hidden h-1.5 w-full">
-              {votes.home > 0 && <div className="bg-blue-400 transition-all" style={{ width: `${(votes.home / votes.total) * 100}%` }} />}
-              {votes.draw > 0 && <div className="bg-gray-300 transition-all" style={{ width: `${(votes.draw / votes.total) * 100}%` }} />}
-              {votes.away > 0 && <div className="bg-orange-400 transition-all" style={{ width: `${(votes.away / votes.total) * 100}%` }} />}
-            </div>
-            <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-              <span className="text-blue-500 font-medium">Local {votes.home}</span>
-              <span>Empate {votes.draw}</span>
-              <span className="text-orange-500 font-medium">Visitante {votes.away}</span>
+          <div className="mt-2.5 border-t border-gray-100 pt-2.5 px-1">
+            <p className="text-[10px] text-gray-400 text-center mb-1.5 uppercase tracking-wide">¿Qué predicen los demás?</p>
+            <div className="flex items-center gap-1.5 justify-center">
+              {/* Home votes */}
+              <div className={`flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1 border ${
+                votes.home >= votes.away && votes.home >= votes.draw
+                  ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-100"
+              }`}>
+                <span className={`font-black text-sm ${votes.home >= votes.away && votes.home >= votes.draw ? "text-blue-600" : "text-gray-400"}`}>
+                  {votes.home}
+                </span>
+                <span className="text-[10px] text-gray-500 truncate w-full text-center leading-tight px-0.5">
+                  {match.homeTeam.split(" ")[0]}
+                </span>
+              </div>
+              {/* Draw votes */}
+              <div className={`flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1 border ${
+                votes.draw >= votes.home && votes.draw >= votes.away
+                  ? "bg-gray-200 border-gray-300" : "bg-gray-50 border-gray-100"
+              }`}>
+                <span className={`font-black text-sm ${votes.draw >= votes.home && votes.draw >= votes.away ? "text-gray-600" : "text-gray-400"}`}>
+                  {votes.draw}
+                </span>
+                <span className="text-[10px] text-gray-500 text-center">Empate</span>
+              </div>
+              {/* Away votes */}
+              <div className={`flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1 border ${
+                votes.away > votes.home && votes.away >= votes.draw
+                  ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-100"
+              }`}>
+                <span className={`font-black text-sm ${votes.away > votes.home && votes.away >= votes.draw ? "text-orange-500" : "text-gray-400"}`}>
+                  {votes.away}
+                </span>
+                <span className="text-[10px] text-gray-500 truncate w-full text-center leading-tight px-0.5">
+                  {match.awayTeam.split(" ")[0]}
+                </span>
+              </div>
             </div>
           </div>
         )}
