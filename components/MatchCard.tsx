@@ -188,7 +188,7 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
               ⚽ {kickoffDate.toLocaleString("es-MX", {
                 timeZone: "America/Monterrey",
                 day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
-              })} hrs
+              })}
             </span>
 
             {/* Countdown to prediction deadline — only show when open and closing within 7 days */}

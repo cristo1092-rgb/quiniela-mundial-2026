@@ -9,11 +9,28 @@ const geist = Geist({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Office Bet Friends · Mundial 2026",
   description: "Quiniela del Mundial 2026 entre amigos. Sin fines de lucro, solo para divertirnos.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "OBF Quiniela",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icon-192.png", sizes: "192x192" }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
+      <head>
+        <meta name="theme-color" content="#16a34a" />
+        <meta name="mobile-web-app-capable" content="yes" />
+      </head>
       <body className={`${geist.className} bg-gray-50 min-h-screen`}>
         {/* Top stripe — host country colors */}
         <div className="h-1 bg-gradient-to-r from-red-600 via-white to-blue-600" />
@@ -38,8 +55,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main className="max-w-5xl mx-auto px-4 py-6 pb-24 sm:pb-6">{children}</main>
         <footer className="hidden sm:block border-t border-gray-200 mt-8 py-6 text-center text-xs text-gray-400 space-y-1">
           <p className="font-medium text-gray-500">Office Bet Friends · Quiniela Mundial 2026</p>
-          <p>Hecha con ❤️ para amigos. Sin fines de lucro — solo para divertirnos.</p>
-          <p>No estamos afiliados a FIFA ni a ninguna organización deportiva oficial.</p>
+          <p>Plataforma de entretenimiento privada para uso exclusivo entre amigos y familiares del organizador.</p>
+          <p>Esta aplicación no constituye una actividad comercial, casa de apuestas ni servicio regulado.</p>
+          <p>No afiliados a FIFA, la Federación Mexicana de Fútbol ni a ninguna organización deportiva oficial.</p>
         </footer>
 
         <BottomNav />
