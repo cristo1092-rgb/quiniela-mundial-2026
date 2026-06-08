@@ -105,7 +105,7 @@ export default function RankingPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <RankingTable scores={scores} currentPlayer={currentPlayer} />
+        <RankingTable scores={scores} currentPlayer={currentPlayer} allPredictions={predictions} results={results} />
       </div>
 
       {scores.length === 0 && resultsCount === 0 && (

@@ -4,6 +4,13 @@ import { Match, isKickoffPast, getKickoffUTC } from "@/lib/matches";
 import { Prediction, Result, getResultLabel } from "@/lib/scoring";
 import Flag from "@/components/Flag";
 
+export interface VoteDistribution {
+  home: number;
+  draw: number;
+  away: number;
+  total: number;
+}
+
 interface Props {
   match: Match;
   prediction?: Prediction;
@@ -11,6 +18,7 @@ interface Props {
   onPredict: (matchId: string, pred: Prediction) => void;
   onDelete?: (matchId: string) => void;
   saving?: boolean;
+  votes?: VoteDistribution;
 }
 
 function Stepper({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled: boolean }) {
@@ -65,7 +73,7 @@ function formatCountdown(ms: number) {
   return `${s}s`;
 }
 
-export default function MatchCard({ match, prediction, result, onPredict, onDelete, saving }: Props) {
+export default function MatchCard({ match, prediction, result, onPredict, onDelete, saving, votes }: Props) {
   const [localG1, setLocalG1] = useState<string>(prediction !== undefined ? String(prediction.g1) : "");
   const [localG2, setLocalG2] = useState<string>(prediction !== undefined ? String(prediction.g2) : "");
   const [justSaved, setJustSaved] = useState(false);
@@ -217,6 +225,22 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
             </span>
           </div>
         </div>
+
+        {/* Vote distribution bar */}
+        {votes && votes.total > 0 && (
+          <div className="mt-2 px-1">
+            <div className="flex rounded-full overflow-hidden h-1.5 w-full">
+              {votes.home > 0 && <div className="bg-blue-400 transition-all" style={{ width: `${(votes.home / votes.total) * 100}%` }} />}
+              {votes.draw > 0 && <div className="bg-gray-300 transition-all" style={{ width: `${(votes.draw / votes.total) * 100}%` }} />}
+              {votes.away > 0 && <div className="bg-orange-400 transition-all" style={{ width: `${(votes.away / votes.total) * 100}%` }} />}
+            </div>
+            <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
+              <span className="text-blue-500 font-medium">Local {votes.home}</span>
+              <span>Empate {votes.draw}</span>
+              <span className="text-orange-500 font-medium">Visitante {votes.away}</span>
+            </div>
+          </div>
+        )}
 
         {/* Status row */}
         <div className="mt-3 flex items-center justify-between text-xs">
