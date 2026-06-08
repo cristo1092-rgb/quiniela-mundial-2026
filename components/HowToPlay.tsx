@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 
-export default function HowToPlay() {
-  const [open, setOpen] = useState(false);
+export default function HowToPlay({ defaultOpen = false }: { defaultOpen?: boolean }) {
+  const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6">

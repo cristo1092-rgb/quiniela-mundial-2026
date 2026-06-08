@@ -35,8 +35,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/quiniela" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
                 Partidos
               </Link>
+              <Link href="/predicciones" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
+                Predicciones
+              </Link>
               <Link href="/ranking" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
                 Ranking
+              </Link>
+              <Link href="/reglas" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
+                Reglas
               </Link>
               <Link href="/admin" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white/90 text-xs">
                 Admin
