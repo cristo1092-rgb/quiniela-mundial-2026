@@ -31,7 +31,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
             </Link>
-            <div className="flex items-center gap-1 sm:gap-2 text-sm">
+            {/* Desktop nav links — hidden on mobile (uses bottom nav instead) */}
+            <div className="hidden sm:flex items-center gap-1 sm:gap-2 text-sm">
               <Link href="/entrar" className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors font-bold text-white">
                 Entrar
               </Link>
