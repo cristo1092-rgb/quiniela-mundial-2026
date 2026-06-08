@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import { TopNav, BottomNav } from "@/components/NavLinks";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -31,27 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 </div>
               </div>
             </Link>
-            {/* Desktop nav links — hidden on mobile (uses bottom nav instead) */}
-            <div className="hidden sm:flex items-center gap-1 sm:gap-2 text-sm">
-              <Link href="/entrar" className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors font-bold text-white">
-                Entrar
-              </Link>
-              <Link href="/quiniela" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
-                Partidos
-              </Link>
-              <Link href="/predicciones" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
-                Predicciones
-              </Link>
-              <Link href="/ranking" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
-                Ranking
-              </Link>
-              <Link href="/reglas" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
-                Reglas
-              </Link>
-              <Link href="/admin" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/50 hover:text-white/90 text-xs">
-                Admin
-              </Link>
-            </div>
+            <TopNav />
           </div>
         </nav>
         <main className="max-w-5xl mx-auto px-4 py-6 pb-24 sm:pb-6">{children}</main>
@@ -61,31 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <p>No estamos afiliados a FIFA ni a ninguna organización deportiva oficial.</p>
         </footer>
 
-        {/* Bottom nav — mobile only */}
-        <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-gray-200 shadow-lg z-50" style={{paddingBottom: "env(safe-area-inset-bottom)"}}>
-          <div className="grid grid-cols-5 h-16">
-            <Link href="/" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
-              <span className="text-xl">🏠</span>
-              <span className="text-[10px] font-medium">Inicio</span>
-            </Link>
-            <Link href="/entrar" className="flex flex-col items-center justify-center gap-0.5 text-green-700 transition-colors">
-              <span className="text-xl">🔑</span>
-              <span className="text-[10px] font-bold">Entrar</span>
-            </Link>
-            <Link href="/quiniela" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
-              <span className="text-xl">⚽</span>
-              <span className="text-[10px] font-medium">Partidos</span>
-            </Link>
-            <Link href="/ranking" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
-              <span className="text-xl">🏆</span>
-              <span className="text-[10px] font-medium">Ranking</span>
-            </Link>
-            <Link href="/reglas" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
-              <span className="text-xl">📋</span>
-              <span className="text-[10px] font-medium">Reglas</span>
-            </Link>
-          </div>
-        </nav>
+        <BottomNav />
       </body>
     </html>
   );
