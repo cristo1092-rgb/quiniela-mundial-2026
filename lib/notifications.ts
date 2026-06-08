@@ -24,7 +24,6 @@ export function sendLocalNotification(title: string, body: string) {
       body,
       icon: "/favicon.ico",
       tag: "quiniela-result",
-      renotify: true,
     });
   });
 }
