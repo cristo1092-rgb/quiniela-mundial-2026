@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { ref, onValue, set, remove } from "firebase/database";
 import {
@@ -23,10 +24,10 @@ import {
 import MatchCard from "@/components/MatchCard";
 import GroupStandings from "@/components/GroupStandings";
 import HowToPlay from "@/components/HowToPlay";
-import PlayerNameModal from "@/components/PlayerNameModal";
 import { requestNotificationPermission, registerServiceWorker, sendLocalNotification } from "@/lib/notifications";
 
 export default function QuinielaPage() {
+  const router = useRouter();
   const [playerName, setPlayerName] = useState<string | null>(null);
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({});
   const [results, setResults] = useState<Record<string, Result>>({});
@@ -42,12 +43,13 @@ export default function QuinielaPage() {
     registerServiceWorker();
   }, []);
 
-  // Load player from localStorage — verify they're still approved
+  // Load player from localStorage — redirect to /entrar if not logged in
   useEffect(() => {
     const stored = localStorage.getItem("quinielaPlayer");
     const authed = localStorage.getItem("quinielaPlayerAuth");
     if (stored && authed === "true") setPlayerName(stored);
-  }, []);
+    else router.replace("/entrar");
+  }, [router]);
 
   // Listen to results — localStorage first, Firebase override if configured
   useEffect(() => {
@@ -159,7 +161,11 @@ export default function QuinielaPage() {
   const totalMatches = MATCHES.length;
 
   if (!playerName) {
-    return <PlayerNameModal onSave={setPlayerName} />;
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (

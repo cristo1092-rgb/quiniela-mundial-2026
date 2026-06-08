@@ -32,6 +32,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </Link>
             <div className="flex items-center gap-1 sm:gap-2 text-sm">
+              <Link href="/entrar" className="px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 transition-colors font-bold text-white">
+                Entrar
+              </Link>
               <Link href="/quiniela" className="px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors font-medium">
                 Partidos
               </Link>
@@ -64,13 +67,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="text-xl">🏠</span>
               <span className="text-[10px] font-medium">Inicio</span>
             </Link>
+            <Link href="/entrar" className="flex flex-col items-center justify-center gap-0.5 text-green-700 transition-colors">
+              <span className="text-xl">🔑</span>
+              <span className="text-[10px] font-bold">Entrar</span>
+            </Link>
             <Link href="/quiniela" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
               <span className="text-xl">⚽</span>
               <span className="text-[10px] font-medium">Partidos</span>
-            </Link>
-            <Link href="/predicciones" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
-              <span className="text-xl">👁</span>
-              <span className="text-[10px] font-medium">Predicciones</span>
             </Link>
             <Link href="/ranking" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
               <span className="text-xl">🏆</span>

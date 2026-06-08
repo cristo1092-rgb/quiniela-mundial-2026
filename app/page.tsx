@@ -13,7 +13,7 @@ export default function Home() {
         <p className="text-green-100 mt-3 text-sm">Quiniela entre amigos — predice marcadores, acumula puntos y gana el pozo.</p>
         <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
           <Link
-            href="/quiniela"
+            href="/entrar"
             className="bg-white text-green-800 font-bold px-6 py-3 rounded-xl hover:bg-green-50 transition-colors text-sm"
           >
             Entrar a mi quiniela →
