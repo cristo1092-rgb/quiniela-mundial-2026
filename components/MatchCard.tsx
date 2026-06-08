@@ -43,12 +43,36 @@ function Stepper({ value, onChange, disabled }: { value: string; onChange: (v: s
   );
 }
 
+function useCountdown(deadline: Date) {
+  const [timeLeft, setTimeLeft] = useState(() => deadline.getTime() - Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setTimeLeft(deadline.getTime() - Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [deadline]);
+  return timeLeft;
+}
+
+function formatCountdown(ms: number) {
+  if (ms <= 0) return null;
+  const totalSec = Math.floor(ms / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (d > 0) return `${d}d ${h}h`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
 export default function MatchCard({ match, prediction, result, onPredict, onDelete, saving }: Props) {
   const [localG1, setLocalG1] = useState<string>(prediction !== undefined ? String(prediction.g1) : "");
   const [localG2, setLocalG2] = useState<string>(prediction !== undefined ? String(prediction.g2) : "");
   const [justSaved, setJustSaved] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const prevSaving = useRef(saving);
+  const deadline = getKickoffUTC(match);
+  const msLeft = useCountdown(deadline);
 
   useEffect(() => {
     if (prediction !== undefined) {
@@ -157,6 +181,17 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
                 day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
               })}
             </span>
+
+            {/* Countdown — only show when open and closing within 7 days */}
+            {canPredict && msLeft > 0 && msLeft < 7 * 24 * 60 * 60 * 1000 && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                msLeft < 3600_000 ? "bg-red-100 text-red-600" :
+                msLeft < 24 * 3600_000 ? "bg-orange-100 text-orange-600" :
+                "bg-blue-50 text-blue-600"
+              }`}>
+                ⏱ {formatCountdown(msLeft)}
+              </span>
+            )}
 
             {/* Result label badge */}
             {localLabel && (
