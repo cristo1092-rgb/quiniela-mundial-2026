@@ -80,11 +80,15 @@ export default function HowToPlay({ defaultOpen = false }: { defaultOpen?: boole
                 <span className="flex-shrink-0 w-6 h-6 bg-green-600 text-white rounded-full text-xs font-bold flex items-center justify-center">1</span>
                 <div>
                   <p className="font-medium text-gray-800">Realiza tu depósito</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Envía <strong>$500 MXN</strong> a la cuenta DIMO desde cualquier banco:</p>
-                  <div className="mt-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 font-mono text-base font-bold text-gray-800 tracking-widest text-center">
-                    5576 6977 35
+                  <p className="text-xs text-gray-500 mt-0.5">Envía <strong>$500 MXN</strong> a esta cuenta BBVA — puedes transferir desde cualquier banco:</p>
+                  <div className="mt-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-center space-y-1">
+                    <p className="font-mono text-base font-bold text-gray-800 tracking-widest">5576 6977 35</p>
+                    <p className="text-xs text-blue-700 font-semibold">🏦 BBVA</p>
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">Cuenta DIMO — se puede transferir desde cualquier banco</p>
+                  <div className="mt-1.5 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <p className="text-xs text-amber-800 font-semibold">⚠️ En la referencia pon tu nombre</p>
+                    <p className="text-xs text-amber-700 mt-0.5">Para identificar tu pago escribe tu nombre completo en el campo de referencia o concepto al hacer la transferencia.</p>
+                  </div>
                 </div>
               </li>
               <li className="flex gap-3">

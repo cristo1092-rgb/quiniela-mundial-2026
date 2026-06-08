@@ -1,5 +1,6 @@
 "use client";
 import { TeamStats } from "@/lib/standings";
+import Flag from "@/components/Flag";
 
 interface Props {
   standings: TeamStats[];
@@ -61,7 +62,7 @@ export default function GroupStandings({ standings, matchesPlayed, bestThirdName
                 <td className="px-3 py-2.5 font-bold text-gray-500 text-center">{pos}</td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg leading-none">{team.flag}</span>
+                    <Flag code={team.flag} size={20} />
                     <span className={`font-semibold text-sm ${isAdvancing ? "text-gray-900" : "text-gray-600"}`}>
                       {team.team}
                     </span>

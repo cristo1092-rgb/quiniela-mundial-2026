@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Match, isKickoffPast, getKickoffUTC } from "@/lib/matches";
 import { Prediction, Result, getResultLabel } from "@/lib/scoring";
+import Flag from "@/components/Flag";
 
 interface Props {
   match: Match;
@@ -129,7 +130,7 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
         <div className="flex items-center gap-2">
           {/* Home team */}
           <div className="flex-1 flex flex-col items-center text-center min-w-0 gap-1">
-            <span className="text-3xl leading-none">{match.homeFlag}</span>
+            <Flag code={match.homeFlag} size={32} />
             <span className="text-xs font-bold text-gray-800 leading-tight truncate w-full px-1">
               {isTBD && match.homeLabel
                 ? <span className="text-gray-400 font-normal italic">{match.homeLabel}</span>
@@ -173,7 +174,7 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
 
           {/* Away team */}
           <div className="flex-1 flex flex-col items-center text-center min-w-0 gap-1">
-            <span className="text-3xl leading-none">{match.awayFlag}</span>
+            <Flag code={match.awayFlag} size={32} />
             <span className="text-xs font-bold text-gray-800 leading-tight truncate w-full px-1">
               {isTBD && match.awayLabel
                 ? <span className="text-gray-400 font-normal italic">{match.awayLabel}</span>

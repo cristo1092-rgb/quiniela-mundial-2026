@@ -50,20 +50,21 @@ export const KNOCKOUT_STAGES: Stage[] = [
   "round32","round16","quarters","semis","thirdPlace","final",
 ];
 
+// ISO 3166-1 alpha-2 codes for flagcdn.com images (work on all OS including Windows)
 const FLAGS: Record<string, string> = {
-  "México": "🇲🇽", "Sudáfrica": "🇿🇦", "Corea del Sur": "🇰🇷", "Chequia": "🇨🇿",
-  "Canadá": "🇨🇦", "Bosnia-Herzegovina": "🇧🇦", "Qatar": "🇶🇦", "Suiza": "🇨🇭",
-  "Brasil": "🇧🇷", "Marruecos": "🇲🇦", "Haití": "🇭🇹", "Escocia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
-  "Estados Unidos": "🇺🇸", "Paraguay": "🇵🇾", "Australia": "🇦🇺", "Turquía": "🇹🇷",
-  "Alemania": "🇩🇪", "Curazao": "🇨🇼", "Costa de Marfil": "🇨🇮", "Ecuador": "🇪🇨",
-  "Países Bajos": "🇳🇱", "Japón": "🇯🇵", "Suecia": "🇸🇪", "Túnez": "🇹🇳",
-  "Bélgica": "🇧🇪", "Egipto": "🇪🇬", "Irán": "🇮🇷", "Nueva Zelanda": "🇳🇿",
-  "España": "🇪🇸", "Cabo Verde": "🇨🇻", "Arabia Saudí": "🇸🇦", "Uruguay": "🇺🇾",
-  "Francia": "🇫🇷", "Senegal": "🇸🇳", "Irak": "🇮🇶", "Noruega": "🇳🇴",
-  "Argentina": "🇦🇷", "Argelia": "🇩🇿", "Austria": "🇦🇹", "Jordania": "🇯🇴",
-  "Portugal": "🇵🇹", "Congo DR": "🇨🇩", "Uzbekistán": "🇺🇿", "Colombia": "🇨🇴",
-  "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿", "Croacia": "🇭🇷", "Ghana": "🇬🇭", "Panamá": "🇵🇦",
-  "TBD": "🏳️",
+  "México": "mx", "Sudáfrica": "za", "Corea del Sur": "kr", "Chequia": "cz",
+  "Canadá": "ca", "Bosnia-Herzegovina": "ba", "Qatar": "qa", "Suiza": "ch",
+  "Brasil": "br", "Marruecos": "ma", "Haití": "ht", "Escocia": "gb-sct",
+  "Estados Unidos": "us", "Paraguay": "py", "Australia": "au", "Turquía": "tr",
+  "Alemania": "de", "Curazao": "cw", "Costa de Marfil": "ci", "Ecuador": "ec",
+  "Países Bajos": "nl", "Japón": "jp", "Suecia": "se", "Túnez": "tn",
+  "Bélgica": "be", "Egipto": "eg", "Irán": "ir", "Nueva Zelanda": "nz",
+  "España": "es", "Cabo Verde": "cv", "Arabia Saudí": "sa", "Uruguay": "uy",
+  "Francia": "fr", "Senegal": "sn", "Irak": "iq", "Noruega": "no",
+  "Argentina": "ar", "Argelia": "dz", "Austria": "at", "Jordania": "jo",
+  "Portugal": "pt", "Congo DR": "cd", "Uzbekistán": "uz", "Colombia": "co",
+  "Inglaterra": "gb-eng", "Croacia": "hr", "Ghana": "gh", "Panamá": "pa",
+  "TBD": "",
 };
 
 function m(
@@ -81,8 +82,8 @@ function m(
     stage,
     homeTeam: home,
     awayTeam: away,
-    homeFlag: FLAGS[home] ?? "🏳️",
-    awayFlag: FLAGS[away] ?? "🏳️",
+    homeFlag: FLAGS[home] ?? "",
+    awayFlag: FLAGS[away] ?? "",
     date,
     time,
     homeLabel,

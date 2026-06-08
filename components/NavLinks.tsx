@@ -41,10 +41,10 @@ export function TopNav() {
 
 const bottomLinks = [
   { href: "/", label: "Inicio", icon: "🏠" },
-  { href: "/entrar", label: "Entrar", icon: "🔑" },
   { href: "/quiniela", label: "Partidos", icon: "⚽" },
+  { href: "/predicciones", label: "Predicciones", icon: "👁" },
   { href: "/ranking", label: "Ranking", icon: "🏆" },
-  { href: "/reglas", label: "Reglas", icon: "📋" },
+  { href: "/admin", label: "Admin", icon: "⚙️" },
 ];
 
 export function BottomNav() {
