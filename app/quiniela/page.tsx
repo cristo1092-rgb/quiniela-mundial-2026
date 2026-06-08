@@ -37,6 +37,8 @@ export default function QuinielaPage() {
   const [activeStage, setActiveStage] = useState<Stage>("groupA");
   const [saving, setSaving] = useState<string | null>(null);
   const [allPredictions, setAllPredictions] = useState<Record<string, Record<string, Prediction>>>({});
+  const [viewMode, setViewMode] = useState<"stage" | "jornada">("stage");
+  const [activeJornada, setActiveJornada] = useState<1 | 2 | 3 | "elim">(1);
   const touchStartX = useRef<number | null>(null);
   const allStagesRef = useRef([...GROUP_STAGES, ...KNOCKOUT_STAGES]);
   const prevResultCount = useRef(0);
@@ -181,14 +183,52 @@ export default function QuinielaPage() {
     return { home, draw, away, total: home + draw + away };
   }
 
+  // Jornada helpers
+  const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
+    1: ["2026-06-11", "2026-06-17"],
+    2: ["2026-06-18", "2026-06-24"],
+    3: ["2026-06-25", "2026-06-27"],
+  };
+  const JORNADA_LABELS = { 1: "Jornada 1", 2: "Jornada 2", 3: "Jornada 3", elim: "Eliminatorias" };
+
+  function getJornadaMatches(jornada: 1 | 2 | 3 | "elim"): Match[] {
+    let base: Match[];
+    if (jornada === "elim") {
+      base = MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number]));
+    } else {
+      const [start, end] = JORNADA_RANGES[jornada];
+      base = MATCHES.filter((m) =>
+        GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number]) &&
+        m.date >= start && m.date <= end
+      );
+    }
+    return base.map(resolveMatch).sort((a, b) =>
+      a.date !== b.date ? a.date.localeCompare(b.date) : a.time.localeCompare(b.time)
+    );
+  }
+
+  function groupByDate(matches: Match[]): Record<string, Match[]> {
+    return matches.reduce((acc, m) => {
+      (acc[m.date] ??= []).push(m);
+      return acc;
+    }, {} as Record<string, Match[]>);
+  }
+
+  function formatDateHeader(dateStr: string): string {
+    const d = new Date(`${dateStr}T12:00:00`);
+    return d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+  }
+
   // Share my predictions via WhatsApp
   function shareMyQuiniela() {
-    const lines = stageMatches.map((m) => {
+    const matches = viewMode === "stage" ? stageMatches : getJornadaMatches(activeJornada);
+    const label = viewMode === "stage" ? STAGE_LABELS[activeStage] : JORNADA_LABELS[activeJornada];
+    const lines = matches.map((m) => {
       const p = predictions[m.id];
       const score = p ? `${p.g1}-${p.g2}` : "—";
       return `${m.homeTeam} vs ${m.awayTeam}: ${score}`;
     });
-    const text = `⚽ Mis predicciones — ${STAGE_LABELS[activeStage]}\n\n${lines.join("\n")}\n\nOffice Bet Friends · Mundial 2026`;
+    const text = `⚽ Mis predicciones — ${label}\n\n${lines.join("\n")}\n\nOffice Bet Friends · Mundial 2026`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
 
@@ -264,142 +304,213 @@ export default function QuinielaPage() {
         />
       </div>
 
-      {/* Stage tabs — horizontal scroll, large touch targets */}
-      <div className="flex gap-1 overflow-x-auto pb-2 mb-6 -mx-4 px-4 scrollbar-hide">
-        <div className="flex gap-1 flex-nowrap">
-          {/* Group divider */}
-          <span className="text-xs text-gray-400 self-center px-1 flex-shrink-0">Grupos</span>
-          {GROUP_STAGES.map((stage) => {
-            const stageMatches = MATCHES.filter((m) => m.stage === stage);
-            const predicted = stageMatches.filter((m) => predictions[m.id]).length;
-            const hasResult = stageMatches.some((m) => results[m.id]);
-            return (
-              <button
-                key={stage}
-                onClick={() => setActiveStage(stage)}
-                className={`flex-shrink-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
-                  activeStage === stage
-                    ? "bg-green-600 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-                }`}
-              >
-                {STAGE_LABELS[stage].replace("Grupo ", "")}
-                {hasResult && predicted === stageMatches.length && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full" />
-                )}
-
-              </button>
-            );
-          })}
-          {/* Knockout divider */}
-          <span className="text-xs text-gray-400 self-center px-1 flex-shrink-0 ml-2">Eliminatorias</span>
-          {KNOCKOUT_STAGES.map((stage) => (
-            <button
-              key={stage}
-              onClick={() => setActiveStage(stage)}
-              className={`flex-shrink-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeStage === stage
-                  ? "bg-green-600 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              {stage === "round32" ? "R32" :
-               stage === "round16" ? "R16" :
-               stage === "quarters" ? "QF" :
-               stage === "semis" ? "SF" :
-               stage === "thirdPlace" ? "3°" : "🏆"}
-            </button>
-          ))}
+      {/* View mode toggle */}
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-xs text-gray-500 font-medium">Ver:</span>
+        <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+          <button
+            onClick={() => setViewMode("stage")}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+              viewMode === "stage" ? "bg-green-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Por grupo
+          </button>
+          <button
+            onClick={() => setViewMode("jornada")}
+            className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-gray-200 ${
+              viewMode === "jornada" ? "bg-green-600 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            Por jornada
+          </button>
         </div>
       </div>
 
-      {/* Stage header */}
-      <h3 className="text-lg font-bold text-gray-800 mb-4">
-        {STAGE_LABELS[activeStage]}
-        <span className="text-sm font-normal text-gray-400 ml-2">
-          ({stageMatches.filter((m) => predictions[m.id]).length}/{stageMatches.length} predichos)
-        </span>
-      </h3>
-
-      {/* Match grid or bracket — swipe horizontally to change stage */}
-      <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        {KNOCKOUT_STAGES.includes(activeStage as typeof KNOCKOUT_STAGES[number]) ? (
-          <>
-            <KnockoutBracket
-              matches={stageMatches}
-              predictions={predictions}
-              results={results}
-            />
-            {/* Also render full MatchCards below for predictions */}
-            <div className="mt-4 space-y-3">
-              {stageMatches.filter((m) => !results[m.id] && m.homeTeam !== "TBD").map((match) => (
-                <MatchCard
-                  key={match.id}
-                  match={match}
-                  prediction={predictions[match.id]}
-                  result={results[match.id]}
-                  onPredict={handlePredict}
-                  onDelete={handleDelete}
-                  saving={saving === match.id}
-                  votes={getVotes(match.id)}
-                />
+      {viewMode === "stage" ? (
+        <>
+          {/* Stage tabs — horizontal scroll, large touch targets */}
+          <div className="flex gap-1 overflow-x-auto pb-2 mb-6 -mx-4 px-4 scrollbar-hide">
+            <div className="flex gap-1 flex-nowrap">
+              <span className="text-xs text-gray-400 self-center px-1 flex-shrink-0">Grupos</span>
+              {GROUP_STAGES.map((stage) => {
+                const sm = MATCHES.filter((m) => m.stage === stage);
+                const predicted = sm.filter((m) => predictions[m.id]).length;
+                const hasResult = sm.some((m) => results[m.id]);
+                return (
+                  <button
+                    key={stage}
+                    onClick={() => setActiveStage(stage)}
+                    className={`flex-shrink-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
+                      activeStage === stage
+                        ? "bg-green-600 text-white"
+                        : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    }`}
+                  >
+                    {STAGE_LABELS[stage].replace("Grupo ", "")}
+                    {hasResult && predicted === sm.length && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full" />
+                    )}
+                  </button>
+                );
+              })}
+              <span className="text-xs text-gray-400 self-center px-1 flex-shrink-0 ml-2">Eliminatorias</span>
+              {KNOCKOUT_STAGES.map((stage) => (
+                <button
+                  key={stage}
+                  onClick={() => setActiveStage(stage)}
+                  className={`flex-shrink-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeStage === stage
+                      ? "bg-green-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  {stage === "round32" ? "R32" : stage === "round16" ? "R16" :
+                   stage === "quarters" ? "QF" : stage === "semis" ? "SF" :
+                   stage === "thirdPlace" ? "3°" : "🏆"}
+                </button>
               ))}
             </div>
-          </>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {stageMatches.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                prediction={predictions[match.id]}
-                result={results[match.id]}
-                onPredict={handlePredict}
-                onDelete={handleDelete}
-                saving={saving === match.id}
-                votes={getVotes(match.id)}
-              />
-            ))}
           </div>
-        )}
-      </div>
 
-      {/* Group standings (only shown when viewing a group tab) */}
-      {GROUP_STAGES.includes(activeStage as typeof GROUP_STAGES[number]) && (() => {
-        const standings = calcGroupStandings(activeStage, results);
-        const allStandings = calcAllStandings(results);
-        const allGroupsComplete = GROUP_STAGES.every((s) => isGroupComplete(s, results));
-        const { bestThird } = calcAdvancing(allStandings);
-        const bestThirdNames = new Set(bestThird.map((t) => t.team));
-        const played = groupMatchesPlayed(activeStage, results);
-        return (
-          <div className="mt-6">
-            <GroupStandings
-              standings={standings}
-              matchesPlayed={played}
-              bestThirdNames={bestThirdNames}
-              allGroupsComplete={allGroupsComplete}
-            />
-          </div>
-        );
-      })()}
+          {/* Stage header */}
+          <h3 className="text-lg font-bold text-gray-800 mb-4">
+            {STAGE_LABELS[activeStage]}
+            <span className="text-sm font-normal text-gray-400 ml-2">
+              ({stageMatches.filter((m) => predictions[m.id]).length}/{stageMatches.length} predichos)
+            </span>
+          </h3>
 
-      {/* Quick nav: next stage */}
-      {(() => {
-        const idx = allStages.indexOf(activeStage);
-        const nextStage = allStages[idx + 1];
-        if (!nextStage) return null;
-        return (
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setActiveStage(nextStage)}
-              className="text-green-600 hover:text-green-700 font-medium text-sm"
-            >
-              Siguiente: {STAGE_LABELS[nextStage]} →
-            </button>
+          {/* Match grid or bracket — swipe to change stage */}
+          <div onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            {KNOCKOUT_STAGES.includes(activeStage as typeof KNOCKOUT_STAGES[number]) ? (
+              <>
+                <KnockoutBracket matches={stageMatches} predictions={predictions} results={results} />
+                <div className="mt-4 space-y-3">
+                  {stageMatches.filter((m) => !results[m.id] && m.homeTeam !== "TBD").map((match) => (
+                    <MatchCard key={match.id} match={match} prediction={predictions[match.id]}
+                      result={results[match.id]} onPredict={handlePredict} onDelete={handleDelete}
+                      saving={saving === match.id} votes={getVotes(match.id)} />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {stageMatches.map((match) => (
+                  <MatchCard key={match.id} match={match} prediction={predictions[match.id]}
+                    result={results[match.id]} onPredict={handlePredict} onDelete={handleDelete}
+                    saving={saving === match.id} votes={getVotes(match.id)} />
+                ))}
+              </div>
+            )}
           </div>
-        );
-      })()}
+
+          {/* Group standings */}
+          {GROUP_STAGES.includes(activeStage as typeof GROUP_STAGES[number]) && (() => {
+            const standings = calcGroupStandings(activeStage, results);
+            const allStandings = calcAllStandings(results);
+            const allGroupsComplete = GROUP_STAGES.every((s) => isGroupComplete(s, results));
+            const { bestThird } = calcAdvancing(allStandings);
+            const bestThirdNames = new Set(bestThird.map((t) => t.team));
+            const played = groupMatchesPlayed(activeStage, results);
+            return (
+              <div className="mt-6">
+                <GroupStandings standings={standings} matchesPlayed={played}
+                  bestThirdNames={bestThirdNames} allGroupsComplete={allGroupsComplete} />
+              </div>
+            );
+          })()}
+
+          {/* Quick nav: next stage */}
+          {(() => {
+            const idx = allStages.indexOf(activeStage);
+            const nextStage = allStages[idx + 1];
+            if (!nextStage) return null;
+            return (
+              <div className="mt-6 text-center">
+                <button onClick={() => setActiveStage(nextStage)}
+                  className="text-green-600 hover:text-green-700 font-medium text-sm">
+                  Siguiente: {STAGE_LABELS[nextStage]} →
+                </button>
+              </div>
+            );
+          })()}
+        </>
+      ) : (
+        <>
+          {/* Jornada tabs */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+            {([1, 2, 3, "elim"] as const).map((j) => {
+              const jMatches = getJornadaMatches(j);
+              const predicted = jMatches.filter((m) => predictions[m.id]).length;
+              const hasResult = jMatches.some((m) => results[m.id]);
+              return (
+                <button
+                  key={j}
+                  onClick={() => setActiveJornada(j)}
+                  className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
+                    activeJornada === j
+                      ? "bg-green-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  {JORNADA_LABELS[j]}
+                  {activeJornada !== j && (
+                    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                      hasResult ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-500"
+                    }`}>
+                      {predicted}/{jMatches.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Jornada header */}
+          <h3 className="text-lg font-bold text-gray-800 mb-4">
+            {JORNADA_LABELS[activeJornada]}
+            {activeJornada !== "elim" && (
+              <span className="text-sm font-normal text-gray-400 ml-2">
+                {(() => {
+                  const [start, end] = JORNADA_RANGES[activeJornada];
+                  const s = new Date(`${start}T12:00:00`);
+                  const e = new Date(`${end}T12:00:00`);
+                  return `${s.getDate()}–${e.getDate()} ${e.toLocaleDateString("es-MX", { month: "long" })}`;
+                })()}
+              </span>
+            )}
+          </h3>
+
+          {/* Matches grouped by date */}
+          {(() => {
+            const jornadaMatches = getJornadaMatches(activeJornada);
+            const byDate = groupByDate(jornadaMatches);
+            return (
+              <div className="space-y-6">
+                {Object.entries(byDate).map(([date, dayMatches]) => (
+                  <div key={date}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="h-px flex-1 bg-gray-200" />
+                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider capitalize">
+                        {formatDateHeader(date)}
+                      </span>
+                      <div className="h-px flex-1 bg-gray-200" />
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {dayMatches.map((match) => (
+                        <MatchCard key={match.id} match={match} prediction={predictions[match.id]}
+                          result={results[match.id]} onPredict={handlePredict} onDelete={handleDelete}
+                          saving={saving === match.id} votes={getVotes(match.id)} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </>
+      )}
     </div>
   );
 }
