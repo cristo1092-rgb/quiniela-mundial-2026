@@ -69,6 +69,12 @@ export function saveLocalPrediction(
   localStorage.setItem(predictionsKey(playerName), JSON.stringify(current));
 }
 
+export function deleteLocalPrediction(playerName: string, matchId: string): void {
+  const current = getLocalPredictions(playerName);
+  delete current[matchId];
+  localStorage.setItem(predictionsKey(playerName), JSON.stringify(current));
+}
+
 // ── Knockout team overrides ────────────────────────────────────────────────
 
 const KO_KEY = "quiniela_knockout";

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Match, isKickoffPast, getKickoffUTC } from "@/lib/matches";
 import { Prediction, Result, getResultLabel } from "@/lib/scoring";
 
@@ -8,20 +8,37 @@ interface Props {
   prediction?: Prediction;
   result?: Result;
   onPredict: (matchId: string, pred: Prediction) => void;
+  onDelete?: (matchId: string) => void;
   saving?: boolean;
 }
 
-export default function MatchCard({ match, prediction, result, onPredict, saving }: Props) {
+export default function MatchCard({ match, prediction, result, onPredict, onDelete, saving }: Props) {
   const [localG1, setLocalG1] = useState<string>(prediction !== undefined ? String(prediction.g1) : "");
   const [localG2, setLocalG2] = useState<string>(prediction !== undefined ? String(prediction.g2) : "");
+  const [justSaved, setJustSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const prevSaving = useRef(saving);
 
   // Sync when prediction changes externally (e.g. Firebase push)
   useEffect(() => {
     if (prediction !== undefined) {
       setLocalG1(String(prediction.g1));
       setLocalG2(String(prediction.g2));
+    } else {
+      setLocalG1("");
+      setLocalG2("");
     }
   }, [prediction]);
+
+  // Trigger save animation when saving transitions false→true→false
+  useEffect(() => {
+    if (prevSaving.current && !saving) {
+      setJustSaved(true);
+      const t = setTimeout(() => setJustSaved(false), 1000);
+      return () => clearTimeout(t);
+    }
+    prevSaving.current = saving;
+  }, [saving]);
 
   const isLocked = !!result;
   const isTBD = match.homeTeam === "TBD" || match.awayTeam === "TBD";
@@ -53,7 +70,8 @@ export default function MatchCard({ match, prediction, result, onPredict, saving
     : (localG1 !== String(prediction.g1) || localG2 !== String(prediction.g2));
 
   return (
-    <div className={`bg-white rounded-xl border-2 transition-all ${
+    <div className={`bg-white rounded-xl border-2 transition-all duration-300 ${
+      justSaved      ? "border-green-500 scale-[1.02] shadow-md shadow-green-100" :
       isExact        ? "border-yellow-400 bg-yellow-50" :
       isResultCorrect ? "border-green-400 bg-green-50" :
       isWrong        ? "border-red-300 bg-red-50" :
@@ -169,10 +187,10 @@ export default function MatchCard({ match, prediction, result, onPredict, saving
         <div className="mt-3 flex items-center justify-between text-xs">
           {/* Prediction saved badge */}
           {prediction !== undefined && !result && (
-            <span className="text-green-600 font-medium flex items-center gap-1">
+            <span className={`font-medium flex items-center gap-1 transition-colors ${justSaved ? "text-green-500" : "text-green-600"}`}>
               {saving ? (
                 <span className="inline-block w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-              ) : "✓"} Guardado: {prediction.g1}–{prediction.g2}
+              ) : justSaved ? "⭐" : "✓"} {justSaved ? "¡Guardado!" : `${prediction.g1}–${prediction.g2}`}
             </span>
           )}
           {!prediction && !result && !isTBD && !kickoffPast && (
@@ -181,6 +199,32 @@ export default function MatchCard({ match, prediction, result, onPredict, saving
           {isLocked && !prediction && (
             <span className="text-gray-400 italic">Sin predicción</span>
           )}
+
+          {/* Delete button — only when there's a prediction and match is still open */}
+          {prediction !== undefined && canPredict && onDelete && (
+            confirmDelete ? (
+              <div className="flex items-center gap-1 ml-auto">
+                <span className="text-red-500">¿Borrar?</span>
+                <button
+                  onClick={() => { onDelete(match.id); setConfirmDelete(false); }}
+                  className="text-red-500 font-bold px-1.5 py-0.5 rounded bg-red-50 hover:bg-red-100"
+                >Sí</button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-gray-400 font-bold px-1.5 py-0.5 rounded bg-gray-50 hover:bg-gray-100"
+                >No</button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="ml-auto text-gray-300 hover:text-red-400 transition-colors p-1 -mr-1"
+                title="Eliminar predicción"
+              >
+                🗑
+              </button>
+            )
+          )}
+
           {/* Lock indicator */}
           {(isLocked || kickoffPast) && (
             <span className="text-gray-400 flex items-center gap-1 ml-auto">

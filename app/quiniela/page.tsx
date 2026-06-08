@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { db } from "@/lib/firebase";
-import { ref, onValue, set } from "firebase/database";
+import { ref, onValue, set, remove } from "firebase/database";
 import {
   MATCHES,
   GROUP_STAGES,
@@ -17,12 +17,14 @@ import {
   getLocalResults,
   getLocalPredictions,
   saveLocalPrediction,
+  deleteLocalPrediction,
   getLocalKnockoutTeams,
 } from "@/lib/localFallback";
 import MatchCard from "@/components/MatchCard";
 import GroupStandings from "@/components/GroupStandings";
 import HowToPlay from "@/components/HowToPlay";
 import PlayerNameModal from "@/components/PlayerNameModal";
+import { requestNotificationPermission, registerServiceWorker, sendLocalNotification } from "@/lib/notifications";
 
 export default function QuinielaPage() {
   const [playerName, setPlayerName] = useState<string | null>(null);
@@ -31,6 +33,14 @@ export default function QuinielaPage() {
   const [knockoutTeams, setKnockoutTeams] = useState<Record<string, string>>({});
   const [activeStage, setActiveStage] = useState<Stage>("groupA");
   const [saving, setSaving] = useState<string | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const allStagesRef = useRef([...GROUP_STAGES, ...KNOCKOUT_STAGES]);
+  const prevResultCount = useRef(0);
+
+  // Register service worker and ask for notification permission
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
 
   // Load player from localStorage — verify they're still approved
   useEffect(() => {
@@ -55,7 +65,13 @@ export default function QuinielaPage() {
     }
 
     const unsubResults = onValue(ref(db, "results"), (snap) => {
-      setResults({ ...getLocalResults(), ...(snap.val() ?? {}) });
+      const newResults = { ...getLocalResults(), ...(snap.val() ?? {}) };
+      const newCount = Object.keys(newResults).length;
+      if (prevResultCount.current > 0 && newCount > prevResultCount.current) {
+        sendLocalNotification("⚽ Nuevo resultado", "El admin cargó un resultado. ¡Revisa tu ranking!");
+      }
+      prevResultCount.current = newCount;
+      setResults(newResults);
     });
     const unsubKO = onValue(ref(db, "knockoutTeams"), (snap) => {
       setKnockoutTeams({ ...getLocalKnockoutTeams(), ...(snap.val() ?? {}) });
@@ -79,9 +95,7 @@ export default function QuinielaPage() {
   const handlePredict = useCallback(
     async (matchId: string, pred: Prediction) => {
       if (!playerName) return;
-      // Save to localStorage immediately (persists on refresh, works without Firebase)
       saveLocalPrediction(playerName, matchId, pred);
-      // Optimistic update
       setPredictions((prev) => ({ ...prev, [matchId]: pred }));
       setSaving(matchId);
       if (isFirebaseConfigured()) {
@@ -93,6 +107,38 @@ export default function QuinielaPage() {
     },
     [playerName]
   );
+
+  const handleDelete = useCallback(
+    async (matchId: string) => {
+      if (!playerName) return;
+      deleteLocalPrediction(playerName, matchId);
+      setPredictions((prev) => { const n = { ...prev }; delete n[matchId]; return n; });
+      if (isFirebaseConfigured()) {
+        try {
+          await remove(ref(db, `predictions/${playerName}/${matchId}`));
+        } catch { /* localStorage already deleted */ }
+      }
+    },
+    [playerName]
+  );
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(dx) < 50) return;
+    const stages = allStagesRef.current;
+    setActiveStage((cur) => {
+      const idx = stages.indexOf(cur);
+      if (dx < 0 && idx < stages.length - 1) return stages[idx + 1];
+      if (dx > 0 && idx > 0) return stages[idx - 1];
+      return cur;
+    });
+  }, []);
 
   // Merge static match data with dynamic knockout team names
   function resolveMatch(match: Match): Match {
@@ -106,7 +152,7 @@ export default function QuinielaPage() {
     };
   }
 
-  const allStages = [...GROUP_STAGES, ...KNOCKOUT_STAGES];
+  const allStages = allStagesRef.current;
   const stageMatches = MATCHES.filter((m) => m.stage === activeStage).map(resolveMatch);
 
   const totalPredictions = Object.keys(predictions).length;
@@ -129,15 +175,25 @@ export default function QuinielaPage() {
             {totalPredictions} de {totalMatches} partidos predichos
           </p>
         </div>
-        <button
-          onClick={() => {
-            localStorage.removeItem("quinielaPlayer");
-            setPlayerName(null);
-          }}
-          className="text-sm text-gray-400 hover:text-gray-600 underline self-start sm:self-auto"
-        >
-          Cambiar nombre
-        </button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          {"Notification" in window && Notification.permission === "default" && (
+            <button
+              onClick={async () => { await requestNotificationPermission(); }}
+              className="text-xs text-blue-600 border border-blue-200 rounded-lg px-2 py-1.5 hover:bg-blue-50 flex items-center gap-1"
+            >
+              🔔 Activar avisos
+            </button>
+          )}
+          <button
+            onClick={() => {
+              localStorage.removeItem("quinielaPlayer");
+              setPlayerName(null);
+            }}
+            className="text-sm text-gray-400 hover:text-gray-600 underline"
+          >
+            Cambiar nombre
+          </button>
+        </div>
       </div>
 
       {/* Progress bar */}
@@ -204,8 +260,12 @@ export default function QuinielaPage() {
         </span>
       </h3>
 
-      {/* Match grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {/* Match grid — swipe horizontally to change stage */}
+      <div
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {stageMatches.map((match) => (
           <MatchCard
             key={match.id}
@@ -213,6 +273,7 @@ export default function QuinielaPage() {
             prediction={predictions[match.id]}
             result={results[match.id]}
             onPredict={handlePredict}
+            onDelete={handleDelete}
             saving={saving === match.id}
           />
         ))}
