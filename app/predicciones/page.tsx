@@ -101,7 +101,7 @@ export default function PrediccionesPage() {
                     const isWrong = result && !isExact && !isCorrect;
 
                     return (
-                      <div key={player} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 border font-medium text-xs ${
+                      <div key={player} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 border font-medium text-xs ${
                         isExact   ? "bg-yellow-50 border-yellow-300 text-yellow-800" :
                         isCorrect ? "bg-green-50 border-green-300 text-green-800" :
                         isWrong   ? "bg-red-50 border-red-200 text-red-700" :

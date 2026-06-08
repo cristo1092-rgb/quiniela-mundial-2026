@@ -61,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </footer>
 
         {/* Bottom nav — mobile only */}
-        <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-gray-200 shadow-lg z-50">
+        <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-gray-200 shadow-lg z-50" style={{paddingBottom: "env(safe-area-inset-bottom)"}}>
           <div className="grid grid-cols-5 h-16">
             <Link href="/" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
               <span className="text-xl">🏠</span>

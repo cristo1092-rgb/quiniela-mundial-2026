@@ -24,10 +24,10 @@ function Stepper({ value, onChange, disabled }: { value: string; onChange: (v: s
         type="button"
         onClick={inc}
         disabled={disabled}
-        className={`w-9 h-7 flex items-center justify-center rounded-t-lg text-lg font-bold leading-none transition-colors
+        className={`w-11 h-10 flex items-center justify-center rounded-t-lg text-xl font-bold leading-none transition-colors
           ${disabled ? "bg-gray-100 text-gray-300 cursor-default" : "bg-green-50 text-green-700 hover:bg-green-100 active:bg-green-200"}`}
       >+</button>
-      <div className={`w-9 h-10 flex items-center justify-center font-mono font-bold text-2xl rounded-none border-x border-gray-200
+      <div className={`w-11 h-12 flex items-center justify-center font-mono font-bold text-2xl rounded-none border-x border-gray-200
         ${disabled ? "bg-gray-100 text-gray-400" : "bg-white text-gray-900"}`}>
         {num !== null ? num : <span className="text-gray-300 text-lg">?</span>}
       </div>
@@ -35,7 +35,7 @@ function Stepper({ value, onChange, disabled }: { value: string; onChange: (v: s
         type="button"
         onClick={dec}
         disabled={disabled || num === null || num <= 0}
-        className={`w-9 h-7 flex items-center justify-center rounded-b-lg text-lg font-bold leading-none transition-colors
+        className={`w-11 h-10 flex items-center justify-center rounded-b-lg text-xl font-bold leading-none transition-colors
           ${disabled || num === null || num <= 0 ? "bg-gray-100 text-gray-300 cursor-default" : "bg-green-50 text-green-700 hover:bg-green-100 active:bg-green-200"}`}
       >−</button>
     </div>

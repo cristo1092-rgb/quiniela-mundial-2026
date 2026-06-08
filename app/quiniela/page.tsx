@@ -223,7 +223,7 @@ export default function QuinielaPage() {
               <button
                 key={stage}
                 onClick={() => setActiveStage(stage)}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors relative ${
+                className={`flex-shrink-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
                   activeStage === stage
                     ? "bg-green-600 text-white"
                     : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
@@ -233,6 +233,7 @@ export default function QuinielaPage() {
                 {hasResult && predicted === stageMatches.length && (
                   <span className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full" />
                 )}
+
               </button>
             );
           })}
@@ -242,7 +243,7 @@ export default function QuinielaPage() {
             <button
               key={stage}
               onClick={() => setActiveStage(stage)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                 activeStage === stage
                   ? "bg-green-600 text-white"
                   : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"

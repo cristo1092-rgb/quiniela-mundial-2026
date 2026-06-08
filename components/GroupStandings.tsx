@@ -38,9 +38,9 @@ export default function GroupStandings({ standings, matchesPlayed, bestThirdName
             <th className="px-3 py-2 text-left w-6">#</th>
             <th className="px-3 py-2 text-left">Equipo</th>
             <th className="px-3 py-2 text-center w-8 font-medium">PJ</th>
-            <th className="px-3 py-2 text-center w-8 font-medium">G</th>
-            <th className="px-3 py-2 text-center w-8 font-medium">E</th>
-            <th className="px-3 py-2 text-center w-8 font-medium">P</th>
+            <th className="px-3 py-2 text-center w-8 font-medium hidden sm:table-cell">G</th>
+            <th className="px-3 py-2 text-center w-8 font-medium hidden sm:table-cell">E</th>
+            <th className="px-3 py-2 text-center w-8 font-medium hidden sm:table-cell">P</th>
             <th className="px-3 py-2 text-center w-10 font-medium">GD</th>
             <th className="px-3 py-2 text-center w-8 font-medium">GF</th>
             <th className="px-3 py-2 text-center w-10 font-bold text-gray-700">Pts</th>
@@ -68,9 +68,9 @@ export default function GroupStandings({ standings, matchesPlayed, bestThirdName
                   </div>
                 </td>
                 <td className="px-3 py-2.5 text-center text-gray-600">{team.played}</td>
-                <td className="px-3 py-2.5 text-center text-gray-600">{team.won}</td>
-                <td className="px-3 py-2.5 text-center text-gray-600">{team.drawn}</td>
-                <td className="px-3 py-2.5 text-center text-gray-600">{team.lost}</td>
+                <td className="px-3 py-2.5 text-center text-gray-600 hidden sm:table-cell">{team.won}</td>
+                <td className="px-3 py-2.5 text-center text-gray-600 hidden sm:table-cell">{team.drawn}</td>
+                <td className="px-3 py-2.5 text-center text-gray-600 hidden sm:table-cell">{team.lost}</td>
                 <td className="px-3 py-2.5 text-center font-medium text-gray-700">
                   {team.gd > 0 ? `+${team.gd}` : team.gd}
                 </td>
