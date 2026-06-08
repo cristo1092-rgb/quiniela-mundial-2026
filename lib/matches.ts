@@ -97,103 +97,103 @@ function m(
 }
 
 // Times are in hora Monterrey CST (UTC-6) — México sin horario de verano desde 2023
-// Horarios aproximados hasta que FIFA publique el calendario completo
+// Horarios oficiales FIFA/ESPN convertidos de ET (UTC-4) a Monterrey (UTC-6) = ET - 2h
 export const MATCHES: Match[] = [
   // ── GRUPO A ──────────────────────────────────────────────────────────────
-  m("A1", "groupA", "México",        "Sudáfrica",    "2026-06-11", "13:00"), // partido inaugural
-  m("A2", "groupA", "Corea del Sur", "Chequia",      "2026-06-11", "14:00"),
-  m("A3", "groupA", "México",        "Corea del Sur","2026-06-15", "11:00"),
-  m("A4", "groupA", "Sudáfrica",     "Chequia",      "2026-06-15", "17:00"),
-  m("A5", "groupA", "México",        "Chequia",      "2026-06-19", "17:00"),
-  m("A6", "groupA", "Sudáfrica",     "Corea del Sur","2026-06-19", "17:00"),
+  m("A1", "groupA", "México",        "Sudáfrica",    "2026-06-11", "13:00"), // 3PM ET — partido inaugural
+  m("A2", "groupA", "Corea del Sur", "Chequia",      "2026-06-11", "20:00"), // 10PM ET
+  m("A3", "groupA", "Chequia",       "Sudáfrica",    "2026-06-18", "10:00"), // 12PM ET
+  m("A4", "groupA", "México",        "Corea del Sur","2026-06-18", "19:00"), // 9PM ET
+  m("A5", "groupA", "México",        "Chequia",      "2026-06-24", "19:00"), // 9PM ET
+  m("A6", "groupA", "Corea del Sur", "Sudáfrica",    "2026-06-24", "19:00"), // 9PM ET
 
   // ── GRUPO B ──────────────────────────────────────────────────────────────
-  m("B1", "groupB", "Canadá",            "Bosnia-Herzegovina","2026-06-12","20:00"),
-  m("B2", "groupB", "Qatar",             "Suiza",             "2026-06-12","14:00"),
-  m("B3", "groupB", "Canadá",            "Qatar",             "2026-06-16","11:00"),
-  m("B4", "groupB", "Bosnia-Herzegovina","Suiza",             "2026-06-16","17:00"),
-  m("B5", "groupB", "Canadá",            "Suiza",             "2026-06-20","17:00"),
-  m("B6", "groupB", "Bosnia-Herzegovina","Qatar",             "2026-06-20","17:00"),
+  m("B1", "groupB", "Canadá",            "Bosnia-Herzegovina","2026-06-12","13:00"), // 3PM ET
+  m("B2", "groupB", "Qatar",             "Suiza",             "2026-06-13","13:00"), // 3PM ET
+  m("B3", "groupB", "Suiza",             "Bosnia-Herzegovina","2026-06-18","13:00"), // 3PM ET
+  m("B4", "groupB", "Canadá",            "Qatar",             "2026-06-18","16:00"), // 6PM ET
+  m("B5", "groupB", "Suiza",             "Canadá",            "2026-06-24","13:00"), // 3PM ET
+  m("B6", "groupB", "Bosnia-Herzegovina","Qatar",             "2026-06-24","13:00"), // 3PM ET
 
   // ── GRUPO C ──────────────────────────────────────────────────────────────
-  m("C1", "groupC", "Brasil",    "Marruecos","2026-06-12","17:00"),
-  m("C2", "groupC", "Haití",     "Escocia",  "2026-06-12","11:00"),
-  m("C3", "groupC", "Brasil",    "Haití",    "2026-06-16","14:00"),
-  m("C4", "groupC", "Marruecos", "Escocia",  "2026-06-16","20:00"),
-  m("C5", "groupC", "Brasil",    "Escocia",  "2026-06-20","17:00"),
-  m("C6", "groupC", "Marruecos", "Haití",    "2026-06-20","17:00"),
+  m("C1", "groupC", "Brasil",    "Marruecos","2026-06-13","16:00"), // 6PM ET
+  m("C2", "groupC", "Haití",     "Escocia",  "2026-06-13","19:00"), // 9PM ET
+  m("C3", "groupC", "Brasil",    "Haití",    "2026-06-19","18:30"), // 8:30PM ET
+  m("C4", "groupC", "Escocia",   "Marruecos","2026-06-19","16:00"), // 6PM ET
+  m("C5", "groupC", "Brasil",    "Escocia",  "2026-06-24","16:00"), // 6PM ET
+  m("C6", "groupC", "Marruecos", "Haití",    "2026-06-24","16:00"), // 6PM ET
 
   // ── GRUPO D ──────────────────────────────────────────────────────────────
-  m("D1", "groupD", "Estados Unidos","Paraguay", "2026-06-13","20:00"),
-  m("D2", "groupD", "Australia",     "Turquía",  "2026-06-13","14:00"),
-  m("D3", "groupD", "Estados Unidos","Australia","2026-06-17","11:00"),
-  m("D4", "groupD", "Paraguay",      "Turquía",  "2026-06-17","17:00"),
-  m("D5", "groupD", "Estados Unidos","Turquía",  "2026-06-21","17:00"),
-  m("D6", "groupD", "Paraguay",      "Australia","2026-06-21","17:00"),
+  m("D1", "groupD", "Estados Unidos","Paraguay",       "2026-06-12","19:00"), // 9PM ET
+  m("D2", "groupD", "Australia",     "Turquía",        "2026-06-13","22:00"), // 12AM ET Jun 14
+  m("D3", "groupD", "Estados Unidos","Australia",      "2026-06-19","13:00"), // 3PM ET
+  m("D4", "groupD", "Turquía",       "Paraguay",       "2026-06-19","21:00"), // 11PM ET
+  m("D5", "groupD", "Turquía",       "Estados Unidos", "2026-06-25","20:00"), // 10PM ET
+  m("D6", "groupD", "Paraguay",      "Australia",      "2026-06-25","20:00"), // 10PM ET
 
   // ── GRUPO E ──────────────────────────────────────────────────────────────
-  m("E1", "groupE", "Alemania",        "Curazao",        "2026-06-13","17:00"),
-  m("E2", "groupE", "Costa de Marfil", "Ecuador",        "2026-06-13","11:00"),
-  m("E3", "groupE", "Alemania",        "Costa de Marfil","2026-06-17","14:00"),
-  m("E4", "groupE", "Curazao",         "Ecuador",        "2026-06-17","20:00"),
-  m("E5", "groupE", "Alemania",        "Ecuador",        "2026-06-21","17:00"),
-  m("E6", "groupE", "Curazao",         "Costa de Marfil","2026-06-21","17:00"),
+  m("E1", "groupE", "Alemania",        "Curazao",        "2026-06-14","11:00"), // 1PM ET
+  m("E2", "groupE", "Costa de Marfil", "Ecuador",        "2026-06-14","17:00"), // 7PM ET
+  m("E3", "groupE", "Alemania",        "Costa de Marfil","2026-06-20","14:00"), // 4PM ET
+  m("E4", "groupE", "Ecuador",         "Curazao",        "2026-06-20","18:00"), // 8PM ET
+  m("E5", "groupE", "Ecuador",         "Alemania",       "2026-06-25","14:00"), // 4PM ET
+  m("E6", "groupE", "Curazao",         "Costa de Marfil","2026-06-25","14:00"), // 4PM ET
 
   // ── GRUPO F ──────────────────────────────────────────────────────────────
-  m("F1", "groupF", "Países Bajos","Japón", "2026-06-13","12:00"),
-  m("F2", "groupF", "Suecia",      "Túnez", "2026-06-13","20:00"),
-  m("F3", "groupF", "Países Bajos","Suecia","2026-06-17","17:00"),
-  m("F4", "groupF", "Japón",       "Túnez", "2026-06-17","12:00"),
-  m("F5", "groupF", "Países Bajos","Túnez", "2026-06-21","17:00"),
-  m("F6", "groupF", "Japón",       "Suecia","2026-06-21","17:00"),
+  m("F1", "groupF", "Países Bajos","Japón",        "2026-06-14","14:00"), // 4PM ET
+  m("F2", "groupF", "Suecia",      "Túnez",        "2026-06-14","20:00"), // 10PM ET
+  m("F3", "groupF", "Países Bajos","Suecia",       "2026-06-20","11:00"), // 1PM ET
+  m("F4", "groupF", "Túnez",       "Japón",        "2026-06-20","22:00"), // 12AM ET Jun 21
+  m("F5", "groupF", "Túnez",       "Países Bajos", "2026-06-25","17:00"), // 7PM ET
+  m("F6", "groupF", "Japón",       "Suecia",       "2026-06-25","17:00"), // 7PM ET
 
   // ── GRUPO G ──────────────────────────────────────────────────────────────
-  m("G1", "groupG", "Bélgica",      "Egipto",       "2026-06-14","20:00"),
-  m("G2", "groupG", "Irán",         "Nueva Zelanda","2026-06-14","14:00"),
-  m("G3", "groupG", "Bélgica",      "Irán",         "2026-06-18","11:00"),
-  m("G4", "groupG", "Egipto",       "Nueva Zelanda","2026-06-18","17:00"),
-  m("G5", "groupG", "Bélgica",      "Nueva Zelanda","2026-06-22","17:00"),
-  m("G6", "groupG", "Egipto",       "Irán",         "2026-06-22","17:00"),
+  m("G1", "groupG", "Bélgica",      "Egipto",       "2026-06-15","13:00"), // 3PM ET
+  m("G2", "groupG", "Irán",         "Nueva Zelanda","2026-06-15","19:00"), // 9PM ET
+  m("G3", "groupG", "Bélgica",      "Irán",         "2026-06-21","13:00"), // 3PM ET
+  m("G4", "groupG", "Nueva Zelanda","Egipto",       "2026-06-21","19:00"), // 9PM ET
+  m("G5", "groupG", "Bélgica",      "Nueva Zelanda","2026-06-26","21:00"), // 11PM ET
+  m("G6", "groupG", "Irán",         "Egipto",       "2026-06-26","21:00"), // 11PM ET
 
   // ── GRUPO H ──────────────────────────────────────────────────────────────
-  m("H1", "groupH", "España",      "Cabo Verde",  "2026-06-14","17:00"),
-  m("H2", "groupH", "Arabia Saudí","Uruguay",     "2026-06-14","11:00"),
-  m("H3", "groupH", "España",      "Arabia Saudí","2026-06-18","14:00"),
-  m("H4", "groupH", "Cabo Verde",  "Uruguay",     "2026-06-18","20:00"),
-  m("H5", "groupH", "España",      "Uruguay",     "2026-06-22","17:00"),
-  m("H6", "groupH", "Cabo Verde",  "Arabia Saudí","2026-06-22","17:00"),
+  m("H1", "groupH", "España",      "Cabo Verde",  "2026-06-15","10:00"), // 12PM ET
+  m("H2", "groupH", "Arabia Saudí","Uruguay",     "2026-06-15","16:00"), // 6PM ET
+  m("H3", "groupH", "España",      "Arabia Saudí","2026-06-21","10:00"), // 12PM ET
+  m("H4", "groupH", "Uruguay",     "Cabo Verde",  "2026-06-21","16:00"), // 6PM ET
+  m("H5", "groupH", "Cabo Verde",  "Arabia Saudí","2026-06-26","18:00"), // 8PM ET
+  m("H6", "groupH", "Uruguay",     "España",      "2026-06-26","18:00"), // 8PM ET
 
   // ── GRUPO I ──────────────────────────────────────────────────────────────
-  m("I1", "groupI", "Francia", "Senegal","2026-06-14","12:00"),
-  m("I2", "groupI", "Irak",    "Noruega","2026-06-14","20:00"),
-  m("I3", "groupI", "Francia", "Irak",   "2026-06-18","17:00"),
-  m("I4", "groupI", "Senegal", "Noruega","2026-06-18","12:00"),
-  m("I5", "groupI", "Francia", "Noruega","2026-06-22","17:00"),
-  m("I6", "groupI", "Senegal", "Irak",   "2026-06-22","17:00"),
+  m("I1", "groupI", "Francia", "Senegal","2026-06-16","13:00"), // 3PM ET
+  m("I2", "groupI", "Irak",    "Noruega","2026-06-16","16:00"), // 6PM ET
+  m("I3", "groupI", "Francia", "Irak",   "2026-06-22","15:00"), // 5PM ET
+  m("I4", "groupI", "Senegal", "Noruega","2026-06-22","18:00"), // 8PM ET
+  m("I5", "groupI", "Noruega", "Francia","2026-06-26","13:00"), // 3PM ET
+  m("I6", "groupI", "Irak",    "Senegal","2026-06-26","13:00"), // 3PM ET
 
   // ── GRUPO J ──────────────────────────────────────────────────────────────
-  m("J1", "groupJ", "Argentina","Argelia", "2026-06-15","20:00"),
-  m("J2", "groupJ", "Austria",  "Jordania","2026-06-15","14:00"),
-  m("J3", "groupJ", "Argentina","Austria", "2026-06-19","11:00"),
-  m("J4", "groupJ", "Argelia",  "Jordania","2026-06-19","17:00"),
-  m("J5", "groupJ", "Argentina","Jordania","2026-06-23","17:00"),
-  m("J6", "groupJ", "Argelia",  "Austria", "2026-06-23","17:00"),
+  m("J1", "groupJ", "Argentina","Argelia", "2026-06-16","19:00"), // 9PM ET
+  m("J2", "groupJ", "Austria",  "Jordania","2026-06-16","22:00"), // 12AM ET Jun 17
+  m("J3", "groupJ", "Argentina","Austria", "2026-06-22","11:00"), // 1PM ET
+  m("J4", "groupJ", "Argelia",  "Jordania","2026-06-22","21:00"), // 11PM ET
+  m("J5", "groupJ", "Argentina","Jordania","2026-06-27","20:00"), // 10PM ET
+  m("J6", "groupJ", "Austria",  "Argelia", "2026-06-27","20:00"), // 10PM ET
 
   // ── GRUPO K ──────────────────────────────────────────────────────────────
-  m("K1", "groupK", "Portugal",   "Congo DR",  "2026-06-15","17:00"),
-  m("K2", "groupK", "Uzbekistán", "Colombia",  "2026-06-15","11:00"),
-  m("K3", "groupK", "Portugal",   "Uzbekistán","2026-06-19","14:00"),
-  m("K4", "groupK", "Congo DR",   "Colombia",  "2026-06-19","20:00"),
-  m("K5", "groupK", "Portugal",   "Colombia",  "2026-06-23","17:00"),
-  m("K6", "groupK", "Congo DR",   "Uzbekistán","2026-06-23","17:00"),
+  m("K1", "groupK", "Portugal",   "Congo DR",   "2026-06-17","11:00"), // 1PM ET
+  m("K2", "groupK", "Uzbekistán", "Colombia",   "2026-06-17","20:00"), // 10PM ET
+  m("K3", "groupK", "Portugal",   "Uzbekistán", "2026-06-23","11:00"), // 1PM ET
+  m("K4", "groupK", "Colombia",   "Congo DR",   "2026-06-23","20:00"), // 10PM ET
+  m("K5", "groupK", "Portugal",   "Colombia",   "2026-06-27","17:30"), // 7:30PM ET
+  m("K6", "groupK", "Uzbekistán", "Congo DR",   "2026-06-27","17:30"), // 7:30PM ET
 
   // ── GRUPO L ──────────────────────────────────────────────────────────────
-  m("L1", "groupL", "Inglaterra","Croacia","2026-06-15","12:00"),
-  m("L2", "groupL", "Ghana",     "Panamá", "2026-06-15","20:00"),
-  m("L3", "groupL", "Inglaterra","Ghana",  "2026-06-19","17:00"),
-  m("L4", "groupL", "Croacia",   "Panamá", "2026-06-19","12:00"),
-  m("L5", "groupL", "Inglaterra","Panamá", "2026-06-23","17:00"),
-  m("L6", "groupL", "Croacia",   "Ghana",  "2026-06-23","17:00"),
+  m("L1", "groupL", "Inglaterra","Croacia",  "2026-06-17","14:00"), // 4PM ET
+  m("L2", "groupL", "Ghana",     "Panamá",   "2026-06-17","17:00"), // 7PM ET
+  m("L3", "groupL", "Inglaterra","Ghana",    "2026-06-23","14:00"), // 4PM ET
+  m("L4", "groupL", "Croacia",   "Panamá",   "2026-06-23","17:00"), // 7PM ET
+  m("L5", "groupL", "Panamá",    "Inglaterra","2026-06-27","15:00"), // 5PM ET
+  m("L6", "groupL", "Ghana",     "Croacia",  "2026-06-27","15:00"), // 5PM ET
 
   // ── DIECISEISAVOS (Round of 32) ───────────────────────────────────────────
   m("R32_1",  "round32","TBD","TBD","2026-06-29","14:00","1A","2C"),
