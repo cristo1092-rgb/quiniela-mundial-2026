@@ -50,12 +50,38 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </nav>
-        <main className="max-w-5xl mx-auto px-4 py-6">{children}</main>
-        <footer className="border-t border-gray-200 mt-8 py-6 text-center text-xs text-gray-400 space-y-1">
+        <main className="max-w-5xl mx-auto px-4 py-6 pb-24 sm:pb-6">{children}</main>
+        <footer className="hidden sm:block border-t border-gray-200 mt-8 py-6 text-center text-xs text-gray-400 space-y-1">
           <p className="font-medium text-gray-500">Office Bet Friends · Quiniela Mundial 2026</p>
           <p>Hecha con ❤️ para amigos. Sin fines de lucro — solo para divertirnos.</p>
           <p>No estamos afiliados a FIFA ni a ninguna organización deportiva oficial.</p>
         </footer>
+
+        {/* Bottom nav — mobile only */}
+        <nav className="fixed bottom-0 left-0 right-0 sm:hidden bg-white border-t border-gray-200 shadow-lg z-50">
+          <div className="grid grid-cols-5 h-16">
+            <Link href="/" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
+              <span className="text-xl">🏠</span>
+              <span className="text-[10px] font-medium">Inicio</span>
+            </Link>
+            <Link href="/quiniela" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
+              <span className="text-xl">⚽</span>
+              <span className="text-[10px] font-medium">Partidos</span>
+            </Link>
+            <Link href="/predicciones" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
+              <span className="text-xl">👁</span>
+              <span className="text-[10px] font-medium">Predicciones</span>
+            </Link>
+            <Link href="/ranking" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
+              <span className="text-xl">🏆</span>
+              <span className="text-[10px] font-medium">Ranking</span>
+            </Link>
+            <Link href="/reglas" className="flex flex-col items-center justify-center gap-0.5 text-gray-500 hover:text-green-700 transition-colors">
+              <span className="text-xl">📋</span>
+              <span className="text-[10px] font-medium">Reglas</span>
+            </Link>
+          </div>
+        </nav>
       </body>
     </html>
   );
