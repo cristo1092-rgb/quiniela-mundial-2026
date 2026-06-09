@@ -168,16 +168,54 @@ export default function PerfilPage() {
     return { label: JORNADA_LABELS[j], pts, played, total: ids.length, predicted: ids.filter((id) => myPreds[id]).length };
   });
 
-  // Insignias
+  // Insignias — pocas pero difíciles de ganar
   const badges = [
-    { id: "first_pred",   emoji: "✏️", label: "Primer paso",  desc: "Hiciste tu primera predicción",                 earned: predicted >= 1 },
-    { id: "first_hit",    emoji: "🎯", label: "¡Acertaste!", desc: "Resultado correcto por primera vez",             earned: correct >= 1 },
-    { id: "first_exact",  emoji: "⭐", label: "Exacto",       desc: "Marcador exacto por primera vez",               earned: exact >= 1 },
-    { id: "hat_trick",    emoji: "🎩", label: "Hat-trick",    desc: "3 marcadores exactos",                          earned: exact >= 3 },
-    { id: "crazy_pred",   emoji: "🤡", label: "Atrevido",     desc: "Predijiste un marcador de 4+ goles totales",    earned: Object.values(myPreds).some((p) => p.g1 + p.g2 >= 4) },
-    { id: "full_jornada", emoji: "📋", label: "Completo",     desc: "Predijiste todos los partidos de una jornada",  earned: jornadaPoints.some((j) => j.predicted === j.total && j.total > 0) },
-    { id: "top3",         emoji: "🏅", label: "Podio",        desc: "Estás entre los 3 primeros",                    earned: myRank != null && myRank <= 3 },
-    { id: "leader",       emoji: "👑", label: "Líder",        desc: "Vas en primer lugar",                           earned: myRank === 1 },
+    {
+      id: "sniper",
+      emoji: "🎯",
+      label: "Francotirador",
+      desc: "5 marcadores exactos",
+      req: "Necesitas 5 exactas",
+      earned: exact >= 5,
+    },
+    {
+      id: "goleador",
+      emoji: "💥",
+      label: "Goleador",
+      desc: "Predijiste y acertaste un partido con 5+ goles totales",
+      req: "Acierta un partido con 5+ goles",
+      earned: (() => {
+        for (const [id, pred] of Object.entries(myPreds)) {
+          const result = results[id];
+          if (result && pred.g1 + pred.g2 >= 5 && calcMatchPoints(pred, result) >= 3) return true;
+        }
+        return false;
+      })(),
+    },
+    {
+      id: "impecable",
+      emoji: "💎",
+      label: "Impecable",
+      desc: "Predijiste todos los partidos de una jornada y los acertaste todos",
+      req: "Predice y acierta toda una jornada",
+      earned: jornadaPoints.some((j) => j.played > 0 && j.played === j.total && j.pts === j.played * 3),
+    },
+    {
+      id: "goat",
+      emoji: "🐐",
+      label: "El GOAT",
+      desc: "Lideras el ranking",
+      req: "Llega al primer lugar",
+      earned: myRank === 1,
+    },
+    {
+      id: "champ",
+      emoji: "🏆",
+      label: "Campeón",
+      desc: "Ganaste el torneo (primer lugar al final)",
+      req: "Gana el torneo completo",
+      earned: false, // se activa manualmente al final
+    },
   ];
 
   async function handleSelectAvatar(emoji: string) {
@@ -238,9 +276,9 @@ export default function PerfilPage() {
                 {savedAvatar ? "✓ Guardado" : "Cambiar"}
               </span>
 
-              {/* Popover flotante */}
+              {/* Popover flotante — abre hacia abajo */}
               {showPicker && (
-                <div className="absolute bottom-full right-0 mb-2 bg-gray-900 rounded-2xl shadow-2xl p-3 z-50" style={{ width: "272px" }}>
+                <div className="absolute top-full right-0 mt-2 bg-gray-900 rounded-2xl shadow-2xl p-3 z-50" style={{ width: "272px" }}>
                   <p className="text-gray-400 text-xs font-semibold mb-2 uppercase tracking-wide">Elige tu avatar</p>
                   <div className="grid grid-cols-8 gap-1.5 max-h-44 overflow-y-auto pr-0.5">
                     {AVATARS.map((emoji) => (
@@ -351,19 +389,28 @@ export default function PerfilPage() {
       {/* Insignias */}
       <div>
         <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Insignias</h2>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="space-y-2">
           {badges.map((badge) => (
             <div
               key={badge.id}
-              title={badge.desc}
-              className={`bg-white rounded-xl border p-3 flex flex-col items-center gap-1 text-center transition-all ${
+              className={`bg-white rounded-xl border px-4 py-3 flex items-center gap-4 transition-all ${
                 badge.earned
                   ? "border-green-200 shadow-sm"
-                  : "border-gray-100 opacity-30 grayscale"
+                  : "border-gray-100 opacity-40"
               }`}
             >
-              <span className="text-2xl">{badge.emoji}</span>
-              <span className="text-[10px] font-bold text-gray-700 leading-tight">{badge.label}</span>
+              <span className={`text-3xl flex-shrink-0 ${badge.earned ? "" : "grayscale"}`}>
+                {badge.emoji}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-black text-gray-800">{badge.label}</p>
+                <p className="text-xs text-gray-500 leading-snug mt-0.5">
+                  {badge.earned ? badge.desc : `🔒 ${badge.req}`}
+                </p>
+              </div>
+              {badge.earned && (
+                <span className="text-green-500 text-lg flex-shrink-0">✓</span>
+              )}
             </div>
           ))}
         </div>
