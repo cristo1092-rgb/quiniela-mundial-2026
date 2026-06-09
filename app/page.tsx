@@ -28,26 +28,26 @@ export default function Home() {
           <div className="flex-1 bg-[#06b6d4]" />
           <div className="flex-1 bg-[#3b82f6]" />
         </div>
-        {/* Cuerpo oscuro estilo FIFA */}
-        <div className="bg-gray-950 p-6 text-white text-center">
+        {/* Cuerpo verde — identidad de la app */}
+        <div className="bg-gradient-to-br from-green-700 to-green-900 p-6 text-white text-center">
           {/* Logo "26" estilo oficial */}
           <div className="flex items-center justify-center gap-3 mb-4">
             <span className="text-[72px] sm:text-[88px] font-black leading-none text-white tracking-tighter select-none">26</span>
             <div className="flex flex-col items-start gap-0.5">
               <span className="text-4xl sm:text-5xl">🏆</span>
-              <span className="text-[10px] font-bold tracking-[0.25em] text-gray-400 uppercase">FIFA World Cup™</span>
+              <span className="text-[10px] font-bold tracking-[0.25em] text-green-300 uppercase">FIFA World Cup™</span>
             </div>
           </div>
 
           {checked && playerName ? (
             <>
               <h1 className="text-xl font-black text-white">¡Hola, {playerName}! 👋</h1>
-              <p className="text-gray-400 mt-1 text-sm">Bienvenido de vuelta. Revisa tus predicciones.</p>
+              <p className="text-green-100 mt-1 text-sm">Bienvenido de vuelta. Revisa tus predicciones.</p>
               <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/quiniela" className="bg-white text-gray-900 font-black px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors text-sm">
+                <Link href="/quiniela" className="bg-white text-green-800 font-black px-6 py-3 rounded-xl hover:bg-green-50 transition-colors text-sm">
                   Ir a mis partidos →
                 </Link>
-                <Link href="/ranking" className="bg-white/10 border border-white/20 text-white font-bold px-6 py-3 rounded-xl hover:bg-white/20 transition-colors text-sm">
+                <Link href="/ranking" className="bg-green-600 border border-green-400 text-white font-bold px-6 py-3 rounded-xl hover:bg-green-500 transition-colors text-sm">
                   🏆 Ver ranking
                 </Link>
               </div>
@@ -55,9 +55,9 @@ export default function Home() {
           ) : (
             <>
               <h1 className="text-xl font-black text-white">Office Bet Friends</h1>
-              <p className="text-gray-400 mt-1 text-sm">Predice marcadores · Acumula puntos · Gana el pozo</p>
+              <p className="text-green-100 mt-1 text-sm">Predice marcadores · Acumula puntos · Gana el pozo</p>
               <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/entrar" className="bg-white text-gray-900 font-black px-6 py-3 rounded-xl hover:bg-gray-100 transition-colors text-sm">
+                <Link href="/entrar" className="bg-white text-green-800 font-black px-6 py-3 rounded-xl hover:bg-green-50 transition-colors text-sm">
                   Entrar a mi quiniela →
                 </Link>
                 <a

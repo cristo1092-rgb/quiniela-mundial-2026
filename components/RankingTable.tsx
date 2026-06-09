@@ -8,9 +8,10 @@ interface Props {
   currentPlayer?: string;
   allPredictions?: Record<string, Record<string, Prediction>>;
   results?: Record<string, Result>;
+  avatars?: Record<string, string>;
 }
 
-export default function RankingTable({ scores, currentPlayer, allPredictions, results }: Props) {
+export default function RankingTable({ scores, currentPlayer, allPredictions, results, avatars }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (scores.length === 0) {
@@ -67,6 +68,9 @@ export default function RankingTable({ scores, currentPlayer, allPredictions, re
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-1.5">
+                    {avatars?.[player.name] && (
+                      <span className="text-xl flex-shrink-0">{avatars[player.name]}</span>
+                    )}
                     <span className={`font-semibold truncate max-w-[130px] block ${isCurrentPlayer ? "text-green-700" : "text-gray-800"}`}>
                       {player.name}
                       {isCurrentPlayer && <span className="ml-1 text-xs text-green-600">(tú)</span>}

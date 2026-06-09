@@ -12,6 +12,7 @@ export default function RankingPage() {
   const [results, setResults] = useState<Record<string, Result>>({});
   const [currentPlayer, setCurrentPlayer] = useState<string | undefined>();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [avatars, setAvatars] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const stored = localStorage.getItem("quinielaPlayer");
@@ -42,11 +43,15 @@ export default function RankingPage() {
       return () => window.removeEventListener("storage", storageHandler);
     }
 
+    const unsubAv = onValue(ref(db, "avatars"), (snap) => {
+      setAvatars(snap.val() ?? {});
+    });
+
     const unsub = onValue(ref(db, "results"), (snap) => {
       setResults({ ...getLocalResults(), ...(snap.val() ?? {}) });
       setLastUpdate(new Date());
     });
-    return () => { unsub(); window.removeEventListener("storage", storageHandler); };
+    return () => { unsub(); unsubAv(); window.removeEventListener("storage", storageHandler); };
   }, []);
 
   const scores: PlayerScore[] = calcRanking(predictions, results);
@@ -158,7 +163,7 @@ export default function RankingPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <RankingTable scores={scores} currentPlayer={currentPlayer} allPredictions={predictions} results={results} />
+        <RankingTable scores={scores} currentPlayer={currentPlayer} allPredictions={predictions} results={results} avatars={avatars} />
       </div>
 
       {scores.length === 0 && resultsCount === 0 && (

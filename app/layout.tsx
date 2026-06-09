@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="flex-1 bg-[#06b6d4]" />
           <div className="flex-1 bg-[#3b82f6]" />
         </div>
-        <nav className="bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-lg">
+        <nav className="bg-gradient-to-b from-green-800 to-green-700 text-white shadow-lg">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/quiniela" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
               {/* FIFA 2026 "26" badge */}
@@ -52,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="leading-tight border-l border-white/20 pl-3">
                 <div className="font-black text-base sm:text-lg tracking-tight text-white">Office Bet Friends</div>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-gray-400 text-xs font-medium tracking-widest uppercase">FIFA World Cup™</span>
+                  <span className="text-green-300 text-xs font-medium tracking-widest uppercase">FIFA World Cup™</span>
                 </div>
               </div>
             </Link>

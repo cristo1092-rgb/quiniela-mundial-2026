@@ -3,10 +3,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
-import { ref, onValue } from "firebase/database";
-import { Prediction, Result, calcRanking, calcMatchPoints, getResultLabel } from "@/lib/scoring";
+import { ref, onValue, set } from "firebase/database";
+import { Prediction, Result, calcRanking, calcMatchPoints } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
 import { MATCHES, GROUP_STAGES, KNOCKOUT_STAGES } from "@/lib/matches";
+
+export const AVATARS = [
+  "⚽","🏆","🦁","🐯","🦊","🐺","🦅","🦋","🔥","💎","🌟","🚀",
+  "🎯","🎸","🌈","🧩","🐉","🦄","🏄","🎩","🧠","🍀","👑","⚡",
+];
 
 const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
   1: ["2026-06-11", "2026-06-17"],
@@ -42,12 +47,19 @@ export default function PerfilPage() {
   const [predictions, setPredictions] = useState<Record<string, Record<string, Prediction>>>({});
   const [results, setResults] = useState<Record<string, Result>>({});
   const [checked, setChecked] = useState(false);
+  const [avatar, setAvatar] = useState<string>("⚽");
+  const [showPicker, setShowPicker] = useState(false);
+  const [savedAvatar, setSavedAvatar] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("quinielaPlayer");
     const authed = localStorage.getItem("quinielaPlayerAuth");
-    if (stored && authed === "true") setPlayerName(stored);
-    else router.replace("/entrar");
+    if (stored && authed === "true") {
+      setPlayerName(stored);
+      // Load avatar from localStorage first
+      const storedAvatar = localStorage.getItem(`quinielaAvatar_${stored}`);
+      if (storedAvatar) setAvatar(storedAvatar);
+    } else router.replace("/entrar");
     setChecked(true);
   }, [router]);
 
@@ -62,6 +74,16 @@ export default function PerfilPage() {
     });
     return () => { unsubR(); unsubP(); };
   }, []);
+
+  // Load avatar from Firebase when playerName is set
+  useEffect(() => {
+    if (!playerName || !isFirebaseConfigured()) return;
+    const unsub = onValue(ref(db, `avatars/${playerName}`), (snap) => {
+      const val = snap.val();
+      if (val) { setAvatar(val); localStorage.setItem(`quinielaAvatar_${playerName}`, val); }
+    });
+    return unsub;
+  }, [playerName]);
 
   if (!checked || !playerName) {
     return (
@@ -108,6 +130,19 @@ export default function PerfilPage() {
     return { label: JORNADA_LABELS[j], pts, played, total: ids.length, predicted: ids.filter((id) => myPreds[id]).length };
   });
 
+  async function handleSelectAvatar(emoji: string) {
+    setAvatar(emoji);
+    setShowPicker(false);
+    if (playerName) {
+      localStorage.setItem(`quinielaAvatar_${playerName}`, emoji);
+      if (isFirebaseConfigured()) {
+        await set(ref(db, `avatars/${playerName}`), emoji);
+      }
+    }
+    setSavedAvatar(true);
+    setTimeout(() => setSavedAvatar(false), 1500);
+  }
+
   function handleLogout() {
     localStorage.removeItem("quinielaPlayer");
     localStorage.removeItem("quinielaPlayerAuth");
@@ -126,20 +161,56 @@ export default function PerfilPage() {
           <div className="flex-1 bg-[#06b6d4]" />
           <div className="flex-1 bg-[#3b82f6]" />
         </div>
-        <div className="bg-gray-950 px-6 py-5 flex items-center justify-between">
-          <div>
-            <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">Mi perfil</p>
-            <h1 className="text-2xl font-black text-white mt-1">{playerName}</h1>
-            {myRank && myRankEntry && (
-              <div className="flex items-center gap-2 mt-2">
-                <span className="text-lg">{myRank === 1 ? "🥇" : myRank === 2 ? "🥈" : myRank === 3 ? "🥉" : "🏅"}</span>
-                <span className="text-sm text-gray-300 font-semibold">
-                  Posición {myRank} de {allScores.length} · {myRankEntry.points} pts
-                </span>
-              </div>
-            )}
+        <div className="bg-gradient-to-br from-green-700 to-green-900 px-6 py-5">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <p className="text-green-300 text-xs font-bold uppercase tracking-widest">Mi perfil</p>
+              <h1 className="text-2xl font-black text-white mt-1 truncate">{playerName}</h1>
+              {myRank && myRankEntry && (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-lg">{myRank === 1 ? "🥇" : myRank === 2 ? "🥈" : myRank === 3 ? "🥉" : "🏅"}</span>
+                  <span className="text-sm text-green-100 font-semibold">
+                    Posición {myRank} de {allScores.length} · {myRankEntry.points} pts
+                  </span>
+                </div>
+              )}
+            </div>
+            {/* Avatar selector */}
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={() => setShowPicker((v) => !v)}
+                className="w-16 h-16 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/30 flex items-center justify-center text-4xl transition-all active:scale-95"
+                title="Cambiar avatar"
+              >
+                {avatar}
+              </button>
+              <span className="text-[10px] text-green-300 font-medium">
+                {savedAvatar ? "✓ Guardado" : "Cambiar"}
+              </span>
+            </div>
           </div>
-          <span className="text-5xl select-none">👤</span>
+
+          {/* Avatar picker */}
+          {showPicker && (
+            <div className="mt-4 bg-white/10 backdrop-blur rounded-xl p-3">
+              <p className="text-green-200 text-xs font-semibold mb-2">Elige tu avatar:</p>
+              <div className="grid grid-cols-8 gap-2">
+                {AVATARS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleSelectAvatar(emoji)}
+                    className={`text-2xl p-1.5 rounded-lg transition-all active:scale-90 ${
+                      avatar === emoji
+                        ? "bg-white/30 ring-2 ring-white scale-110"
+                        : "bg-white/10 hover:bg-white/20"
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
