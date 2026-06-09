@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import HowToPlay from "@/components/HowToPlay";
 import { db } from "@/lib/firebase";
 import { ref, get, set } from "firebase/database";
 import {
@@ -112,38 +113,10 @@ export default function EntrarPage() {
     <div className="min-h-[70vh] flex flex-col items-center justify-center">
       <div className="w-full max-w-sm">
 
-        {/* Journey — solo visible en step nombre */}
+        {/* Reglas — solo visible en step nombre */}
         {step === "name" && (
-          <div className="mb-5 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-            <div className="bg-green-600 px-4 py-2.5">
-              <p className="text-white text-xs font-bold uppercase tracking-wider">¿Cómo participar?</p>
-            </div>
-            <div className="divide-y divide-gray-100">
-              <div className="flex items-center gap-3 px-4 py-3">
-                <span className="w-7 h-7 rounded-full bg-green-100 text-green-700 font-black text-sm flex items-center justify-center flex-shrink-0">1</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Paga tu inscripción</p>
-                  <p className="text-xs text-gray-400">Contáctale al organizador para apartar tu lugar</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 px-4 py-3">
-                <span className="w-7 h-7 rounded-full bg-green-100 text-green-700 font-black text-sm flex items-center justify-center flex-shrink-0">2</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">El organizador te registra</p>
-                  <p className="text-xs text-gray-400">Tu nombre queda habilitado en el sistema</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 px-4 py-3">
-                <span className="w-7 h-7 rounded-full bg-green-600 text-white font-black text-sm flex items-center justify-center flex-shrink-0">3</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Entra y predice aquí</p>
-                  <p className="text-xs text-gray-400">Escribe tu nombre exactamente como te registraron</p>
-                </div>
-              </div>
-            </div>
-            <div className="px-4 py-2.5 bg-gray-50 flex items-center justify-between">
-              <Link href="/reglas" className="text-xs text-green-700 font-semibold hover:underline">📋 Ver reglas y puntaje →</Link>
-            </div>
+          <div className="mb-5">
+            <HowToPlay defaultOpen />
           </div>
         )}
 
