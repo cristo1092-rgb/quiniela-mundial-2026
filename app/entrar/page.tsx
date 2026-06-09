@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import HowToPlay from "@/components/HowToPlay";
 import { db } from "@/lib/firebase";
 import { ref, get, set } from "firebase/database";
 import {
@@ -113,10 +112,30 @@ export default function EntrarPage() {
     <div className="min-h-[70vh] flex flex-col items-center justify-center">
       <div className="w-full max-w-sm">
 
-        {/* Reglas — solo visible en step nombre */}
+        {/* Journey — solo visible en step nombre */}
         {step === "name" && (
-          <div className="mb-5">
-            <HowToPlay defaultOpen />
+          <div className="mb-5 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-green-600 px-4 py-3">
+              <p className="text-white text-xs font-bold uppercase tracking-wider">¿Cómo participar?</p>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {[
+                { n: 1, title: "Realiza tu depósito", sub: "$500 MXN · BBVA 5576697735" },
+                { n: 2, title: "Pide tu usuario al organizador", sub: "Mándale un WhatsApp para que te registre" },
+                { n: 3, title: "Ingresa aquí y predice", sub: "Escribe el nombre que te asignó el organizador", active: true },
+              ].map(({ n, title, sub, active }) => (
+                <div key={n} className="flex items-center gap-3 px-4 py-3">
+                  <span className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-sm font-black ${active ? "bg-green-600 text-white" : "bg-green-100 text-green-700"}`}>{n}</span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-800">{title}</p>
+                    <p className="text-xs text-gray-400">{sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-4 py-2.5 bg-gray-50">
+              <Link href="/reglas" className="text-xs text-green-700 font-semibold hover:underline">📋 Ver reglas completas →</Link>
+            </div>
           </div>
         )}
 
