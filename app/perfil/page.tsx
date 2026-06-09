@@ -202,8 +202,8 @@ export default function PerfilPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <div className="rounded-2xl overflow-hidden shadow-lg">
-        <div className="h-1.5 flex">
+      <div className="rounded-2xl shadow-lg">
+        <div className="h-1.5 flex rounded-t-2xl overflow-hidden">
           <div className="flex-1 bg-[#e91e8c]" />
           <div className="flex-1 bg-[#f97316]" />
           <div className="flex-1 bg-[#facc15]" />
@@ -211,7 +211,7 @@ export default function PerfilPage() {
           <div className="flex-1 bg-[#06b6d4]" />
           <div className="flex-1 bg-[#3b82f6]" />
         </div>
-        <div className="bg-gradient-to-br from-green-700 to-green-900 px-6 py-5">
+        <div className="bg-gradient-to-br from-green-700 to-green-900 px-6 py-5 rounded-b-2xl">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <p className="text-green-300 text-xs font-bold uppercase tracking-widest">Mi perfil</p>
