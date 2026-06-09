@@ -159,6 +159,26 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
       )}
 
       <div className="p-4">
+        {/* Status badge */}
+        {!result && (
+          <div className="flex justify-end mb-2 -mt-1">
+            {kickoffPast ? (
+              <span className="text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
+                🔒 Cerrado
+              </span>
+            ) : isTBD ? (
+              <span className="text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
+                ⏳ Por definir
+              </span>
+            ) : (
+              <span className="text-[10px] font-bold bg-green-50 text-green-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse inline-block" />
+                Abierto
+              </span>
+            )}
+          </div>
+        )}
+
         {/* Teams + stepper row */}
         <div className="flex items-center gap-2">
           {/* Home team */}

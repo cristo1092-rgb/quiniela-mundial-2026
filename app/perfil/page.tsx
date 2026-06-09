@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/firebase";
@@ -9,14 +9,16 @@ import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
 import { MATCHES, GROUP_STAGES, KNOCKOUT_STAGES } from "@/lib/matches";
 
 export const AVATARS = [
-  // Fútbol
-  "⚽","🥅","🧤","👟","🥾","🏟️","🎽","🪄",
-  // Selecciones / países
-  "🇲🇽","🇧🇷","🇦🇷","🇩🇪","🇫🇷","🇪🇸","🇵🇹","🏴󠁧󠁢󠁥󠁮󠁧󠁿",
-  // Chistosos / drama
-  "🤌","😤","🤯","🥹","😭","🤬","🫣","🤡",
-  // Trofeos / gloria
-  "🏆","🥇","🎖️","👑","🔥","💀","🧠","🐐",
+  // ⚽ Fútbol
+  "⚽","🥅","🧤","👟","🥾","🏟️","🎽","🦵","🧦","🏃","🤸","🦶",
+  // 🌍 Países
+  "🇲🇽","🇧🇷","🇦🇷","🇩🇪","🇫🇷","🇪🇸","🇵🇹","🏴󠁧󠁢󠁥󠁮󠁧󠁿","🇺🇸","🇯🇵","🇮🇹","🇳🇱",
+  // 😂 Dramáticos
+  "🤌","😤","🤯","🥹","😭","🤬","🫣","🤡","😈","🥶","🫠","🤦","🙈","💀",
+  // 🏆 Gloria & memes
+  "🏆","🥇","👑","🔥","🧠","🐐","⚡","💎","🎯","🎪",
+  // 🐾 Animales
+  "🦁","🐯","🦊","🦅",
 ];
 
 const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
@@ -56,6 +58,7 @@ export default function PerfilPage() {
   const [avatar, setAvatar] = useState<string>("⚽");
   const [showPicker, setShowPicker] = useState(false);
   const [savedAvatar, setSavedAvatar] = useState(false);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem("quinielaPlayer");
@@ -90,6 +93,22 @@ export default function PerfilPage() {
     });
     return unsub;
   }, [playerName]);
+
+  // Close picker when tapping outside
+  useEffect(() => {
+    if (!showPicker) return;
+    function handleOutside(e: MouseEvent | TouchEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false);
+      }
+    }
+    document.addEventListener("mousedown", handleOutside);
+    document.addEventListener("touchstart", handleOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleOutside);
+      document.removeEventListener("touchstart", handleOutside);
+    };
+  }, [showPicker]);
 
   if (!checked || !playerName) {
     return (
@@ -206,8 +225,8 @@ export default function PerfilPage() {
                 </div>
               )}
             </div>
-            {/* Avatar selector */}
-            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+            {/* Avatar selector — popover */}
+            <div ref={pickerRef} className="relative flex-shrink-0">
               <button
                 onClick={() => setShowPicker((v) => !v)}
                 className="w-16 h-16 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/30 flex items-center justify-center text-4xl transition-all active:scale-95"
@@ -215,33 +234,33 @@ export default function PerfilPage() {
               >
                 {avatar}
               </button>
-              <span className="text-[10px] text-green-300 font-medium">
+              <span className="block text-center text-[10px] text-green-300 font-medium mt-1">
                 {savedAvatar ? "✓ Guardado" : "Cambiar"}
               </span>
+
+              {/* Popover flotante */}
+              {showPicker && (
+                <div className="absolute bottom-full right-0 mb-2 bg-gray-900 rounded-2xl shadow-2xl p-3 z-50" style={{ width: "272px" }}>
+                  <p className="text-gray-400 text-xs font-semibold mb-2 uppercase tracking-wide">Elige tu avatar</p>
+                  <div className="grid grid-cols-8 gap-1.5 max-h-44 overflow-y-auto pr-0.5">
+                    {AVATARS.map((emoji) => (
+                      <button
+                        key={emoji}
+                        onClick={() => handleSelectAvatar(emoji)}
+                        className={`text-2xl p-1 rounded-lg transition-all active:scale-90 ${
+                          avatar === emoji
+                            ? "bg-white/25 ring-2 ring-white"
+                            : "hover:bg-white/10"
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-
-          {/* Avatar picker */}
-          {showPicker && (
-            <div className="mt-4 bg-white/10 backdrop-blur rounded-xl p-3">
-              <p className="text-green-200 text-xs font-semibold mb-2">Elige tu avatar:</p>
-              <div className="grid grid-cols-8 gap-2">
-                {AVATARS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleSelectAvatar(emoji)}
-                    className={`text-2xl p-1.5 rounded-lg transition-all active:scale-90 ${
-                      avatar === emoji
-                        ? "bg-white/30 ring-2 ring-white scale-110"
-                        : "bg-white/10 hover:bg-white/20"
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
