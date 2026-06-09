@@ -7,6 +7,7 @@ const links = [
   { href: "/quiniela", label: "Partidos" },
   { href: "/predicciones", label: "Predicciones" },
   { href: "/ranking", label: "Ranking" },
+  { href: "/perfil", label: "Mi perfil" },
   { href: "/reglas", label: "Reglas" },
   { href: "/admin", label: "Admin", muted: true },
 ];
@@ -44,7 +45,7 @@ const bottomLinks = [
   { href: "/quiniela", label: "Partidos", icon: "⚽" },
   { href: "/predicciones", label: "Predicciones", icon: "👁" },
   { href: "/ranking", label: "Ranking", icon: "🏆" },
-  { href: "/admin", label: "Admin", icon: "⚙️" },
+  { href: "/perfil", label: "Mi perfil", icon: "👤" },
 ];
 
 export function BottomNav() {

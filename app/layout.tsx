@@ -28,24 +28,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es">
       <head>
-        <meta name="theme-color" content="#16a34a" />
+        <meta name="theme-color" content="#111827" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className={`${geist.className} bg-gray-50 min-h-screen`}>
-        {/* Top stripe — host country colors */}
-        <div className="h-1 bg-gradient-to-r from-red-600 via-white to-blue-600" />
-        <nav className="bg-gradient-to-b from-green-800 to-green-700 text-white shadow-lg">
+        {/* Raya FIFA World Cup 2026 — paleta oficial */}
+        <div className="h-1.5 flex">
+          <div className="flex-1 bg-[#e91e8c]" />
+          <div className="flex-1 bg-[#f97316]" />
+          <div className="flex-1 bg-[#facc15]" />
+          <div className="flex-1 bg-[#84cc16]" />
+          <div className="flex-1 bg-[#06b6d4]" />
+          <div className="flex-1 bg-[#3b82f6]" />
+        </div>
+        <nav className="bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-lg">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
             <Link href="/quiniela" className="flex items-center gap-3 hover:opacity-90 transition-opacity">
-              {/* Mini World Cup 2026 badge */}
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/10 border border-white/20 flex flex-col items-center justify-center leading-none">
-                <span className="text-lg leading-none">⚽</span>
+              {/* FIFA 2026 "26" badge */}
+              <div className="flex-shrink-0 flex items-center justify-center leading-none">
+                <span className="text-3xl font-black text-white leading-none tracking-tighter">26</span>
+                <span className="text-xl ml-0.5">🏆</span>
               </div>
-              <div className="leading-tight">
-                <div className="font-bold text-base sm:text-lg tracking-tight">Office Bet Friends</div>
+              <div className="leading-tight border-l border-white/20 pl-3">
+                <div className="font-black text-base sm:text-lg tracking-tight text-white">Office Bet Friends</div>
                 <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-green-300 text-xs">🇲🇽🇺🇸🇨🇦</span>
-                  <span className="text-green-300 text-xs font-medium">FIFA World Cup 2026™</span>
+                  <span className="text-gray-400 text-xs font-medium tracking-widest uppercase">FIFA World Cup™</span>
                 </div>
               </div>
             </Link>

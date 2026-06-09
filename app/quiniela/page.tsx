@@ -10,6 +10,7 @@ import {
   STAGE_LABELS,
   Stage,
   Match,
+  isKickoffPast,
 } from "@/lib/matches";
 import { Prediction, Result, calcRanking } from "@/lib/scoring";
 import { VoteDistribution } from "@/components/MatchCard";
@@ -235,6 +236,20 @@ export default function QuinielaPage() {
   const totalPredictions = Object.keys(predictions).length;
   const totalMatches = MATCHES.length;
 
+  // Pending predictions: matches in current jornada without a prediction that haven't started yet
+  function getCurrentJornada(): 1 | 2 | 3 | "elim" {
+    const today = new Date().toISOString().slice(0, 10);
+    if (today < "2026-06-18") return 1;
+    if (today < "2026-06-25") return 2;
+    if (today <= "2026-06-27") return 3;
+    return "elim";
+  }
+  const currentJornada = getCurrentJornada();
+  const pendingMatches = getJornadaMatches(currentJornada).filter(
+    (m) => !predictions[m.id] && !results[m.id] && !isKickoffPast(m)
+  );
+  const pendingCount = pendingMatches.length;
+
   if (!playerName) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -303,6 +318,27 @@ export default function QuinielaPage() {
           style={{ width: `${(totalPredictions / totalMatches) * 100}%` }}
         />
       </div>
+
+      {/* Recordatorio: predicciones pendientes */}
+      {pendingCount > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-3 mb-4">
+          <span className="text-2xl flex-shrink-0">⏰</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-amber-800">
+              {pendingCount === 1
+                ? `Te falta 1 predicción en ${JORNADA_LABELS[currentJornada]}`
+                : `Te faltan ${pendingCount} predicciones en ${JORNADA_LABELS[currentJornada]}`}
+            </p>
+            <p className="text-xs text-amber-600">Cierra antes del primer partido de la jornada</p>
+          </div>
+          <button
+            onClick={() => setViewMode("jornada")}
+            className="flex-shrink-0 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Ver →
+          </button>
+        </div>
+      )}
 
       {/* View mode toggle */}
       <div className="flex items-center gap-2 mb-4">

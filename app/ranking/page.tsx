@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
-import { Prediction, Result, calcRanking, PlayerScore } from "@/lib/scoring";
+import { Prediction, Result, calcRanking, calcMatchPoints, PlayerScore } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
+import { MATCHES, GROUP_STAGES } from "@/lib/matches";
 import RankingTable from "@/components/RankingTable";
 
 export default function RankingPage() {
@@ -51,6 +52,39 @@ export default function RankingPage() {
   const scores: PlayerScore[] = calcRanking(predictions, results);
   const resultsCount = Object.keys(results).length;
 
+  // Compute MVP: player with most points in the most recent jornada that has results
+  const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
+    1: ["2026-06-11", "2026-06-17"],
+    2: ["2026-06-18", "2026-06-24"],
+    3: ["2026-06-25", "2026-06-27"],
+  };
+  const JORNADA_LABELS: Record<1 | 2 | 3, string> = { 1: "Jornada 1", 2: "Jornada 2", 3: "Jornada 3" };
+
+  const mvp = (() => {
+    // Find most recent jornada with at least one result
+    for (const j of [3, 2, 1] as const) {
+      const [start, end] = JORNADA_RANGES[j];
+      const jMatchIds = MATCHES
+        .filter((m) => GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number]) && m.date >= start && m.date <= end)
+        .map((m) => m.id);
+      const hasResult = jMatchIds.some((id) => results[id]);
+      if (!hasResult) continue;
+      // Compute points per player in this jornada
+      let best: { player: string; points: number } | null = null;
+      for (const [player, preds] of Object.entries(predictions)) {
+        let pts = 0;
+        for (const id of jMatchIds) {
+          const pred = preds[id];
+          const result = results[id];
+          if (pred && result) pts += calcMatchPoints(pred, result);
+        }
+        if (!best || pts > best.points) best = { player, points: pts };
+      }
+      if (best && best.points > 0) return { ...best, jornada: JORNADA_LABELS[j] };
+    }
+    return null;
+  })();
+
   return (
     <div>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -91,6 +125,25 @@ export default function RankingPage() {
           )}
         </div>
       </div>
+
+      {/* MVP card */}
+      {mvp && (
+        <div className="rounded-2xl overflow-hidden mb-6 shadow-md">
+          <div className="h-1 flex">
+            <div className="flex-1 bg-[#facc15]" />
+            <div className="flex-1 bg-[#f97316]" />
+            <div className="flex-1 bg-[#e91e8c]" />
+          </div>
+          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-yellow-900/70">⭐ MVP — {mvp.jornada}</p>
+              <p className="text-2xl font-black text-white mt-0.5">{mvp.player}</p>
+              <p className="text-sm text-yellow-900/80 font-semibold">{mvp.points} puntos en la jornada</p>
+            </div>
+            <span className="text-5xl select-none">🏆</span>
+          </div>
+        </div>
+      )}
 
       {/* Points legend */}
       <div className="bg-white rounded-xl border border-gray-200 p-3 mb-6 flex flex-wrap gap-4 text-sm text-gray-600">
