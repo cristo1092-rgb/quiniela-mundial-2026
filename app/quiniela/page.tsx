@@ -39,7 +39,7 @@ export default function QuinielaPage() {
   const [activeStage, setActiveStage] = useState<Stage>("groupA");
   const [saving, setSaving] = useState<string | null>(null);
   const [allPredictions, setAllPredictions] = useState<Record<string, Record<string, Prediction>>>({});
-  const [viewMode, setViewMode] = useState<"stage" | "jornada">("stage");
+  const [viewMode, setViewMode] = useState<"stage" | "jornada">("jornada");
   const [activeJornada, setActiveJornada] = useState<1 | 2 | 3 | "elim">(1);
   const touchStartX = useRef<number | null>(null);
   const allStagesRef = useRef([...GROUP_STAGES, ...KNOCKOUT_STAGES]);
