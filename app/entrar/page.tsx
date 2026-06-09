@@ -133,8 +133,20 @@ export default function EntrarPage() {
                 </div>
               ))}
             </div>
-            <div className="px-4 py-2.5 bg-gray-50">
-              <Link href="/reglas" className="text-xs text-green-700 font-semibold hover:underline">📋 Ver reglas completas →</Link>
+            {/* Premio pool */}
+            <div className="px-4 py-3 bg-gray-50 flex items-center gap-2">
+              <span className="text-xs text-gray-400 font-semibold uppercase tracking-wide mr-1">Premio</span>
+              {[
+                { place: "🥇", pct: "70%", label: "1er lugar" },
+                { place: "🥈", pct: "20%", label: "2do lugar" },
+                { place: "🥉", pct: "10%", label: "3er lugar" },
+              ].map(({ place, pct, label }) => (
+                <div key={place} className="flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2 py-1">
+                  <span className="text-sm">{place}</span>
+                  <span className="text-xs font-black text-gray-800">{pct}</span>
+                </div>
+              ))}
+              <Link href="/reglas" className="ml-auto text-xs text-green-700 font-semibold hover:underline whitespace-nowrap">Ver reglas →</Link>
             </div>
           </div>
         )}
