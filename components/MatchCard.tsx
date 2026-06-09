@@ -173,6 +173,14 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
 
           {/* Steppers */}
           <div className="flex-shrink-0 flex flex-col items-center gap-1.5">
+            {/* Floating save confirmation */}
+            <div className="relative h-0 w-full flex justify-center">
+              {justSaved && (
+                <span className="absolute -top-2 text-green-500 font-black text-base animate-float-up pointer-events-none select-none z-10">
+                  ✓
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-1">
               <div className="border border-gray-200 rounded-xl overflow-hidden">
                 <Stepper value={localG1} onChange={(v) => handleChange("g1", v)} disabled={!canPredict} />

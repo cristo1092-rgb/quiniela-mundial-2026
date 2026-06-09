@@ -28,6 +28,7 @@ import GroupStandings from "@/components/GroupStandings";
 import KnockoutBracket from "@/components/KnockoutBracket";
 import HowToPlay from "@/components/HowToPlay";
 import { requestNotificationPermission, registerServiceWorker, sendLocalNotification } from "@/lib/notifications";
+import PullToRefresh from "@/components/PullToRefresh";
 
 export default function QuinielaPage() {
   const router = useRouter();
@@ -259,6 +260,7 @@ export default function QuinielaPage() {
   }
 
   return (
+    <PullToRefresh onRefresh={() => new Promise(r => setTimeout(r, 600))}>
     <div>
       <HowToPlay />
       {/* Header */}
@@ -548,5 +550,6 @@ export default function QuinielaPage() {
         </>
       )}
     </div>
+    </PullToRefresh>
   );
 }

@@ -124,6 +124,19 @@ export default function PerfilPage() {
   const favScore = Object.entries(scoreCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
   const resultsCount = Object.keys(results).length;
 
+  // Predicción más loca (más goles totales)
+  const craziestEntry = Object.entries(myPreds)
+    .map(([id, p]) => ({ id, p, total: p.g1 + p.g2 }))
+    .sort((a, b) => b.total - a.total)[0];
+  const craziestMatch = craziestEntry && craziestEntry.total >= 4
+    ? MATCHES.find((m) => m.id === craziestEntry.id)
+    : null;
+
+  // Rival directo
+  const myRankIdx = myRank != null ? myRank - 1 : -1;
+  const rivalAbove = myRankIdx > 0 ? allScores[myRankIdx - 1] : null;
+  const rivalBelow = myRankIdx >= 0 && myRankIdx < allScores.length - 1 ? allScores[myRankIdx + 1] : null;
+
   // Points per jornada
   const jornadaPoints = ([1, 2, 3, "elim"] as const).map((j) => {
     const ids = getJornadaMatchIds(j);
@@ -135,6 +148,18 @@ export default function PerfilPage() {
     }
     return { label: JORNADA_LABELS[j], pts, played, total: ids.length, predicted: ids.filter((id) => myPreds[id]).length };
   });
+
+  // Insignias
+  const badges = [
+    { id: "first_pred",   emoji: "✏️", label: "Primer paso",  desc: "Hiciste tu primera predicción",                 earned: predicted >= 1 },
+    { id: "first_hit",    emoji: "🎯", label: "¡Acertaste!", desc: "Resultado correcto por primera vez",             earned: correct >= 1 },
+    { id: "first_exact",  emoji: "⭐", label: "Exacto",       desc: "Marcador exacto por primera vez",               earned: exact >= 1 },
+    { id: "hat_trick",    emoji: "🎩", label: "Hat-trick",    desc: "3 marcadores exactos",                          earned: exact >= 3 },
+    { id: "crazy_pred",   emoji: "🤡", label: "Atrevido",     desc: "Predijiste un marcador de 4+ goles totales",    earned: Object.values(myPreds).some((p) => p.g1 + p.g2 >= 4) },
+    { id: "full_jornada", emoji: "📋", label: "Completo",     desc: "Predijiste todos los partidos de una jornada",  earned: jornadaPoints.some((j) => j.predicted === j.total && j.total > 0) },
+    { id: "top3",         emoji: "🏅", label: "Podio",        desc: "Estás entre los 3 primeros",                    earned: myRank != null && myRank <= 3 },
+    { id: "leader",       emoji: "👑", label: "Líder",        desc: "Vas en primer lugar",                           earned: myRank === 1 },
+  ];
 
   async function handleSelectAvatar(emoji: string) {
     setAvatar(emoji);
@@ -257,11 +282,79 @@ export default function PerfilPage() {
         </div>
       )}
 
+      {/* Predicción más loca */}
+      {craziestMatch && craziestEntry && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+          <span className="text-3xl flex-shrink-0">🤡</span>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-0.5">Tu predicción más loca</p>
+            <p className="font-black text-gray-900 text-sm truncate">
+              {craziestMatch.homeTeam} {craziestEntry.p.g1} – {craziestEntry.p.g2} {craziestMatch.awayTeam}
+            </p>
+            <p className="text-xs text-amber-600">{craziestEntry.total} goles totales 🔥</p>
+          </div>
+        </div>
+      )}
+
+      {/* Rivales directos */}
+      {(rivalAbove || rivalBelow) && (
+        <div>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Rivales directos</h2>
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden divide-y divide-gray-100">
+            {rivalAbove && (
+              <div className="flex items-center px-4 py-3 gap-3">
+                <span className="text-orange-400 text-lg">▲</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{rivalAbove.name}</p>
+                  <p className="text-xs text-gray-400">{rivalAbove.points} pts</p>
+                </div>
+                <span className="text-xs font-bold text-orange-500 bg-orange-50 px-2 py-1 rounded-full">
+                  +{rivalAbove.points - (myRankEntry?.points ?? 0)} pts arriba
+                </span>
+              </div>
+            )}
+            {rivalBelow && (
+              <div className="flex items-center px-4 py-3 gap-3">
+                <span className="text-blue-400 text-lg">▼</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-800 truncate">{rivalBelow.name}</p>
+                  <p className="text-xs text-gray-400">{rivalBelow.points} pts</p>
+                </div>
+                <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded-full">
+                  {(myRankEntry?.points ?? 0) - rivalBelow.points} pts abajo
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Insignias */}
+      <div>
+        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Insignias</h2>
+        <div className="grid grid-cols-4 gap-2">
+          {badges.map((badge) => (
+            <div
+              key={badge.id}
+              title={badge.desc}
+              className={`bg-white rounded-xl border p-3 flex flex-col items-center gap-1 text-center transition-all ${
+                badge.earned
+                  ? "border-green-200 shadow-sm"
+                  : "border-gray-100 opacity-30 grayscale"
+              }`}
+            >
+              <span className="text-2xl">{badge.emoji}</span>
+              <span className="text-[10px] font-bold text-gray-700 leading-tight">{badge.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Acciones */}
       <div className="flex flex-col gap-3">
         <Link
           href="/quiniela"
-          className="bg-gray-900 text-white font-bold text-center py-3 rounded-xl hover:bg-gray-800 transition-colors text-sm"
+          className="bg-green-600 text-white font-bold text-center py-3 rounded-xl hover:bg-green-700 transition-colors text-sm"
         >
           Ir a mis partidos →
         </Link>

@@ -6,6 +6,7 @@ import { Prediction, Result, calcRanking, calcMatchPoints, PlayerScore } from "@
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
 import { MATCHES, GROUP_STAGES } from "@/lib/matches";
 import RankingTable from "@/components/RankingTable";
+import PullToRefresh from "@/components/PullToRefresh";
 
 export default function RankingPage() {
   const [predictions, setPredictions] = useState<Record<string, Record<string, Prediction>>>({});
@@ -91,6 +92,7 @@ export default function RankingPage() {
   })();
 
   return (
+    <PullToRefresh onRefresh={() => new Promise(r => setTimeout(r, 600))}>
     <div>
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -172,5 +174,6 @@ export default function RankingPage() {
         </p>
       )}
     </div>
+    </PullToRefresh>
   );
 }
