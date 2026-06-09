@@ -9,8 +9,14 @@ import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
 import { MATCHES, GROUP_STAGES, KNOCKOUT_STAGES } from "@/lib/matches";
 
 export const AVATARS = [
-  "⚽","🏆","🦁","🐯","🦊","🐺","🦅","🦋","🔥","💎","🌟","🚀",
-  "🎯","🎸","🌈","🧩","🐉","🦄","🏄","🎩","🧠","🍀","👑","⚡",
+  // Fútbol
+  "⚽","🥅","🧤","👟","🥾","🏟️","🎽","🪄",
+  // Selecciones / países
+  "🇲🇽","🇧🇷","🇦🇷","🇩🇪","🇫🇷","🇪🇸","🇵🇹","🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+  // Chistosos / drama
+  "🤌","😤","🤯","🥹","😭","🤬","🫣","🤡",
+  // Trofeos / gloria
+  "🏆","🥇","🎖️","👑","🔥","💀","🧠","🐐",
 ];
 
 const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
