@@ -49,7 +49,7 @@ export default function RankingPage() {
     });
 
     const unsub = onValue(ref(db, "results"), (snap) => {
-      setResults({ ...getLocalResults(), ...(snap.val() ?? {}) });
+      setResults(snap.val() ?? {});
       setLastUpdate(new Date());
     });
     return () => { unsub(); unsubAv(); window.removeEventListener("storage", storageHandler); };

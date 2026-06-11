@@ -74,7 +74,7 @@ export default function QuinielaPage() {
     }
 
     const unsubResults = onValue(ref(db, "results"), (snap) => {
-      const newResults = { ...getLocalResults(), ...(snap.val() ?? {}) };
+      const newResults = snap.val() ?? {};
       const newCount = Object.keys(newResults).length;
       if (prevResultCount.current > 0 && newCount > prevResultCount.current) {
         sendLocalNotification("⚽ Nuevo resultado", "El admin cargó un resultado. ¡Revisa tu ranking!");

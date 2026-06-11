@@ -76,7 +76,7 @@ export default function PerfilPage() {
     setResults(getLocalResults());
     if (!isFirebaseConfigured()) return;
     const unsubR = onValue(ref(db, "results"), (snap) => {
-      setResults({ ...getLocalResults(), ...(snap.val() ?? {}) });
+      setResults(snap.val() ?? {});
     });
     const unsubP = onValue(ref(db, "predictions"), (snap) => {
       setPredictions(snap.val() ?? {});
