@@ -30,17 +30,16 @@ export default function RankingPage() {
   }, []);
 
   useEffect(() => {
-    // Always load results from localStorage first
-    setResults(getLocalResults());
     const storageHandler = (e: StorageEvent) => {
       if (e.key === "quiniela_results") {
         setResults(getLocalResults());
         setLastUpdate(new Date());
       }
     };
-    window.addEventListener("storage", storageHandler);
 
     if (!isFirebaseConfigured()) {
+      setResults(getLocalResults());
+      window.addEventListener("storage", storageHandler);
       return () => window.removeEventListener("storage", storageHandler);
     }
 

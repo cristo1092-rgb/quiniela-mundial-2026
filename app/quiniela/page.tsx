@@ -58,10 +58,12 @@ export default function QuinielaPage() {
     else router.replace("/entrar");
   }, [router]);
 
-  // Listen to results — localStorage first, Firebase override if configured
+  // Listen to results — localStorage only when Firebase not configured
   useEffect(() => {
-    setResults(getLocalResults());
-    setKnockoutTeams(getLocalKnockoutTeams());
+    if (!isFirebaseConfigured()) {
+      setResults(getLocalResults());
+      setKnockoutTeams(getLocalKnockoutTeams());
+    }
 
     if (!isFirebaseConfigured()) {
       // Listen for changes from admin tab via storage events

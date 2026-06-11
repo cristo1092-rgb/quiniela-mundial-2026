@@ -73,8 +73,7 @@ export default function PerfilPage() {
   }, [router]);
 
   useEffect(() => {
-    setResults(getLocalResults());
-    if (!isFirebaseConfigured()) return;
+    if (!isFirebaseConfigured()) { setResults(getLocalResults()); return; }
     const unsubR = onValue(ref(db, "results"), (snap) => {
       setResults(snap.val() ?? {});
     });
