@@ -294,16 +294,6 @@ export default function QuinielaPage() {
             </svg>
             Compartir
           </button>
-          <button
-            onClick={() => {
-              localStorage.removeItem("quinielaPlayer");
-              localStorage.removeItem("quinielaPlayerAuth");
-              setPlayerName(null);
-            }}
-            className="text-sm text-gray-400 hover:text-gray-600 underline"
-          >
-            Cambiar nombre
-          </button>
         </div>
       </div>
 
