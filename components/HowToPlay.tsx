@@ -126,7 +126,7 @@ export default function HowToPlay({ defaultOpen = false }: { defaultOpen?: boole
               <li>Navega por los grupos (A–L) y las eliminatorias</li>
               <li>En cada partido escribe el <strong>marcador exacto</strong> que predices (ej. <code className="bg-gray-100 px-1 rounded">2 — 1</code>)</li>
               <li>El sistema deduce automáticamente si es victoria local, empate o visitante</li>
-              <li>Puedes cambiar tus predicciones hasta la medianoche del día del partido</li>
+              <li>Puedes cambiar tus predicciones hasta <strong>30 minutos antes</strong> del inicio del partido</li>
             </ol>
           </div>
 

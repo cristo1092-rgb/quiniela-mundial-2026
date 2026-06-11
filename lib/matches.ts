@@ -17,11 +17,11 @@ export interface Match {
   awayLabel?: string;
 }
 
-/** Returns the prediction deadline: 23:59 Monterrey (GMT-6) the day BEFORE the match.
- *  México abolió horario de verano 2023 — siempre GMT-6. */
+/** Returns the prediction deadline: 30 min before kickoff (Monterrey CDT, UTC-5). */
 export function getDeadlineUTC(match: Match): Date {
-  // midnight of match day in Monterrey = end of previous day (23:59:59)
-  return new Date(`${match.date}T00:00:00-06:00`);
+  const kickoff = getMatchKickoffUTC(match);
+  kickoff.setMinutes(kickoff.getMinutes() - 30);
+  return kickoff;
 }
 
 /** True once the prediction deadline has passed (midnight Monterrey on match day). */

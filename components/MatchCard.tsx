@@ -106,6 +106,8 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
   const isTBD = match.homeTeam === "TBD" || match.awayTeam === "TBD";
   const kickoffPast = isKickoffPast(match);
   const canPredict = !isLocked && !isTBD && !kickoffPast;
+  const minutesToClose = Math.floor((getDeadlineUTC(match).getTime() - Date.now()) / 60000);
+  const closingSoon = canPredict && minutesToClose <= 60 && minutesToClose > 0;
 
   const predLabel = prediction !== undefined ? getResultLabel(prediction.g1, prediction.g2) : null;
   const actualLabel = result ? getResultLabel(result.g1, result.g2) : null;
@@ -169,6 +171,11 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
             ) : isTBD ? (
               <span className="text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
                 ⏳ Por definir
+              </span>
+            ) : closingSoon ? (
+              <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse inline-block" />
+                ⚠️ Cierra en {minutesToClose}min
               </span>
             ) : (
               <span className="text-[10px] font-bold bg-green-50 text-green-600 px-2 py-0.5 rounded-full flex items-center gap-1">
