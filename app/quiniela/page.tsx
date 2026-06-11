@@ -271,17 +271,9 @@ export default function QuinielaPage() {
           <h2 className="text-2xl font-bold text-gray-900">
             Hola, <span className="text-green-600">{playerName}</span> 👋
           </h2>
-          <div className="flex items-center gap-3 mt-1 flex-wrap">
-            <p className="text-gray-500 text-sm">
-              {totalPredictions} de {totalMatches} partidos predichos
-            </p>
-            {myScore && myRank && (
-              <span className="flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">
-                {myRank === 1 ? "🥇" : myRank === 2 ? "🥈" : myRank === 3 ? "🥉" : `#${myRank}`}
-                {myScore.points} pts · pos. {myRank}/{rankingScores.length}
-              </span>
-            )}
-          </div>
+          <p className="text-gray-500 text-sm mt-1">
+            {totalPredictions} de {totalMatches} partidos predichos
+          </p>
         </div>
         <div className="flex items-center gap-3 self-start sm:self-auto">
           {"Notification" in window && Notification.permission === "default" && (
