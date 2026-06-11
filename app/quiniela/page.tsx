@@ -10,7 +10,13 @@ import {
   STAGE_LABELS,
   Stage,
   Match,
+  Jornada,
+  JORNADA_LABELS,
+  JORNADA_RANGES,
   isKickoffPast,
+  getDeadlineUTC,
+  getJornadaMatches as getJornadaMatchesBase,
+  getCurrentJornada,
 } from "@/lib/matches";
 import { Prediction, Result, calcRanking } from "@/lib/scoring";
 import { VoteDistribution } from "@/components/MatchCard";
@@ -29,6 +35,7 @@ import KnockoutBracket from "@/components/KnockoutBracket";
 import HowToPlay from "@/components/HowToPlay";
 import { requestNotificationPermission, registerServiceWorker, sendLocalNotification } from "@/lib/notifications";
 import PullToRefresh from "@/components/PullToRefresh";
+import TodayMatches from "@/components/TodayMatches";
 
 export default function QuinielaPage() {
   const router = useRouter();
@@ -105,6 +112,33 @@ export default function QuinielaPage() {
     });
     return unsub;
   }, [playerName]);
+
+  // Aviso local: partido sin predicción que cierra en menos de 1 hora
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) return;
+
+    function checkClosingSoon() {
+      if (Notification.permission !== "granted") return;
+      const now = Date.now();
+      for (const m of MATCHES) {
+        if (predictions[m.id] || m.homeTeam === "TBD") continue;
+        const msLeft = getDeadlineUTC(m).getTime() - now;
+        if (msLeft <= 0 || msLeft > 60 * 60 * 1000) continue;
+        const key = `quinielaNotified_${m.id}`;
+        if (localStorage.getItem(key)) continue;
+        localStorage.setItem(key, "1");
+        const mins = Math.floor(msLeft / 60000);
+        sendLocalNotification(
+          "⏰ Cierra pronto",
+          `${m.homeTeam} vs ${m.awayTeam} cierra en ${mins} min y no has predicho`
+        );
+      }
+    }
+
+    checkClosingSoon();
+    const id = setInterval(checkClosingSoon, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [predictions]);
 
   const handlePredict = useCallback(
     async (matchId: string, pred: Prediction) => {
@@ -187,26 +221,9 @@ export default function QuinielaPage() {
     return { home, draw, away, total: home + draw + away };
   }
 
-  // Jornada helpers
-  const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
-    1: ["2026-06-11", "2026-06-17"],
-    2: ["2026-06-18", "2026-06-24"],
-    3: ["2026-06-25", "2026-06-27"],
-  };
-  const JORNADA_LABELS = { 1: "Jornada 1", 2: "Jornada 2", 3: "Jornada 3", elim: "Eliminatorias" };
-
-  function getJornadaMatches(jornada: 1 | 2 | 3 | "elim"): Match[] {
-    let base: Match[];
-    if (jornada === "elim") {
-      base = MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number]));
-    } else {
-      const [start, end] = JORNADA_RANGES[jornada];
-      base = MATCHES.filter((m) =>
-        GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number]) &&
-        m.date >= start && m.date <= end
-      );
-    }
-    return base.map(resolveMatch).sort((a, b) =>
+  // Jornada helpers (rangos y filtro base viven en lib/matches.ts)
+  function getJornadaMatches(jornada: Jornada): Match[] {
+    return getJornadaMatchesBase(jornada).map(resolveMatch).sort((a, b) =>
       a.date !== b.date ? a.date.localeCompare(b.date) : a.time.localeCompare(b.time)
     );
   }
@@ -240,13 +257,6 @@ export default function QuinielaPage() {
   const totalMatches = MATCHES.length;
 
   // Pending predictions: matches in current jornada without a prediction that haven't started yet
-  function getCurrentJornada(): 1 | 2 | 3 | "elim" {
-    const today = new Date().toISOString().slice(0, 10);
-    if (today < "2026-06-18") return 1;
-    if (today < "2026-06-25") return 2;
-    if (today <= "2026-06-27") return 3;
-    return "elim";
-  }
   const currentJornada = getCurrentJornada();
   const pendingMatches = getJornadaMatches(currentJornada).filter(
     (m) => !predictions[m.id] && !results[m.id] && !isKickoffPast(m)
@@ -315,7 +325,7 @@ export default function QuinielaPage() {
                 ? `Te falta 1 predicción en ${JORNADA_LABELS[currentJornada]}`
                 : `Te faltan ${pendingCount} predicciones en ${JORNADA_LABELS[currentJornada]}`}
             </p>
-            <p className="text-xs text-amber-600">Cierra antes del primer partido de la jornada</p>
+            <p className="text-xs text-amber-600">Cada partido cierra 30 min antes de iniciar</p>
           </div>
           <button
             onClick={() => setViewMode("jornada")}
@@ -325,6 +335,13 @@ export default function QuinielaPage() {
           </button>
         </div>
       )}
+
+      {/* Hoy juegan */}
+      <TodayMatches
+        matches={MATCHES.map(resolveMatch)}
+        predictions={predictions}
+        results={results}
+      />
 
       {/* View mode toggle */}
       <div className="flex items-center gap-2 mb-4">

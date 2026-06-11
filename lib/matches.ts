@@ -247,3 +247,42 @@ export function getMatchById(id: string): Match | undefined {
 export function getMatchesByStage(stage: Stage): Match[] {
   return MATCHES.filter((m) => m.stage === stage);
 }
+
+// ── Jornadas ────────────────────────────────────────────────────────────────
+
+export type Jornada = 1 | 2 | 3 | "elim";
+
+export const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
+  1: ["2026-06-11", "2026-06-17"],
+  2: ["2026-06-18", "2026-06-24"],
+  3: ["2026-06-25", "2026-06-27"],
+};
+
+export const JORNADA_LABELS: Record<Jornada, string> = {
+  1: "Jornada 1", 2: "Jornada 2", 3: "Jornada 3", elim: "Eliminatorias",
+};
+
+export function getJornadaMatches(jornada: Jornada): Match[] {
+  if (jornada === "elim") {
+    return MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage));
+  }
+  const [start, end] = JORNADA_RANGES[jornada];
+  return MATCHES.filter((m) =>
+    GROUP_STAGES.includes(m.stage) && m.date >= start && m.date <= end
+  );
+}
+
+export function getCurrentJornada(): Jornada {
+  const today = new Date().toISOString().slice(0, 10);
+  if (today < "2026-06-18") return 1;
+  if (today < "2026-06-25") return 2;
+  if (today <= "2026-06-27") return 3;
+  return "elim";
+}
+
+export function matchJornada(m: Match): Jornada {
+  if (KNOCKOUT_STAGES.includes(m.stage)) return "elim";
+  if (m.date <= JORNADA_RANGES[1][1]) return 1;
+  if (m.date <= JORNADA_RANGES[2][1]) return 2;
+  return 3;
+}

@@ -9,9 +9,11 @@ interface Props {
   allPredictions?: Record<string, Record<string, Prediction>>;
   results?: Record<string, Result>;
   avatars?: Record<string, string>;
+  /** Positions gained (+) or lost (−) vs. before the current jornada */
+  movement?: Record<string, number>;
 }
 
-export default function RankingTable({ scores, currentPlayer, allPredictions, results, avatars }: Props) {
+export default function RankingTable({ scores, currentPlayer, allPredictions, results, avatars, movement }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (scores.length === 0) {
@@ -64,7 +66,14 @@ export default function RankingTable({ scores, currentPlayer, allPredictions, re
                 } ${hasDetail ? "cursor-pointer select-none" : ""}`}
               >
                 <td className="px-3 py-3 font-bold text-gray-500">
-                  {medal ?? index + 1}
+                  <span className="flex items-center gap-1">
+                    {medal ?? index + 1}
+                    {movement && movement[player.name] !== undefined && movement[player.name] !== 0 && (
+                      movement[player.name] > 0
+                        ? <span className="text-[10px] text-green-600 font-black">▲{movement[player.name]}</span>
+                        : <span className="text-[10px] text-red-500 font-black">▼{Math.abs(movement[player.name])}</span>
+                    )}
+                  </span>
                 </td>
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-1.5">

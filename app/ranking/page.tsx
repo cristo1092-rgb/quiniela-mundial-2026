@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 import { Prediction, Result, calcRanking, calcMatchPoints, PlayerScore } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
-import { MATCHES, GROUP_STAGES } from "@/lib/matches";
+import { MATCHES, getMatchById, matchJornada, getCurrentJornada, Jornada } from "@/lib/matches";
 import RankingTable from "@/components/RankingTable";
 import PullToRefresh from "@/components/PullToRefresh";
 
@@ -54,24 +54,50 @@ export default function RankingPage() {
     return () => { unsub(); unsubAv(); window.removeEventListener("storage", storageHandler); };
   }, []);
 
-  const scores: PlayerScore[] = calcRanking(predictions, results);
+  const [view, setView] = useState<"total" | 1 | 2 | 3>("total");
+
+  // Filter results to a single jornada
+  function resultsOfJornada(j: Jornada): Record<string, Result> {
+    const filtered: Record<string, Result> = {};
+    for (const [matchId, r] of Object.entries(results)) {
+      const m = getMatchById(matchId);
+      if (m && matchJornada(m) === j) filtered[matchId] = r;
+    }
+    return filtered;
+  }
+
+  const viewResults = view === "total" ? results : resultsOfJornada(view);
+  const scores: PlayerScore[] = calcRanking(predictions, viewResults);
   const resultsCount = Object.keys(results).length;
 
+  // Movement arrows (Total view): current rank vs. rank excluding current jornada's results
+  const movement: Record<string, number> = (() => {
+    if (view !== "total") return {};
+    const currentJ = getCurrentJornada();
+    const currentJResults = resultsOfJornada(currentJ);
+    if (Object.keys(currentJResults).length === 0) return {};
+    const prevResults: Record<string, Result> = {};
+    for (const [matchId, r] of Object.entries(results)) {
+      if (!currentJResults[matchId]) prevResults[matchId] = r;
+    }
+    // Sin resultados previos no hay ranking base — las flechas serían ruido
+    if (Object.keys(prevResults).length === 0) return {};
+    const prevScores = calcRanking(predictions, prevResults);
+    const deltas: Record<string, number> = {};
+    scores.forEach((s, i) => {
+      const prevIdx = prevScores.findIndex((p) => p.name === s.name);
+      if (prevIdx >= 0) deltas[s.name] = prevIdx - i;
+    });
+    return deltas;
+  })();
+
   // Compute MVP: player with most points in the most recent jornada that has results
-  const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
-    1: ["2026-06-11", "2026-06-17"],
-    2: ["2026-06-18", "2026-06-24"],
-    3: ["2026-06-25", "2026-06-27"],
-  };
   const JORNADA_LABELS: Record<1 | 2 | 3, string> = { 1: "Jornada 1", 2: "Jornada 2", 3: "Jornada 3" };
 
   const mvp = (() => {
     // Find most recent jornada with at least one result
     for (const j of [3, 2, 1] as const) {
-      const [start, end] = JORNADA_RANGES[j];
-      const jMatchIds = MATCHES
-        .filter((m) => GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number]) && m.date >= start && m.date <= end)
-        .map((m) => m.id);
+      const jMatchIds = MATCHES.filter((m) => matchJornada(m) === j).map((m) => m.id);
       const hasResult = jMatchIds.some((id) => results[id]);
       if (!hasResult) continue;
       // Compute points per player in this jornada
@@ -163,8 +189,28 @@ export default function RankingPage() {
         </div>
       </div>
 
+      {/* View selector: total vs por jornada */}
+      <div className="flex items-center gap-2 mb-4">
+        {([["total", "Total"], [1, "J1"], [2, "J2"], [3, "J3"]] as const).map(([v, label]) => (
+          <button
+            key={String(v)}
+            onClick={() => setView(v)}
+            className={`px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors ${
+              view === v
+                ? "bg-green-600 text-white border-green-600"
+                : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+        {view !== "total" && (
+          <span className="text-xs text-gray-400 ml-1">Solo puntos de la Jornada {view}</span>
+        )}
+      </div>
+
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <RankingTable scores={scores} currentPlayer={currentPlayer} allPredictions={predictions} results={results} avatars={avatars} />
+        <RankingTable scores={scores} currentPlayer={currentPlayer} allPredictions={predictions} results={viewResults} avatars={avatars} movement={movement} />
       </div>
 
       {scores.length === 0 && resultsCount === 0 && (
