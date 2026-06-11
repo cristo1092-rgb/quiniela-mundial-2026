@@ -239,10 +239,6 @@ export default function EntrarPage() {
                   className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl transition-colors">
                   {loading ? "Guardando..." : "Guardar PIN y entrar →"}
                 </button>
-                <button type="button" onClick={() => { setStep("name"); setPin(""); setPinConfirm(""); setError(""); }}
-                  className="w-full text-sm text-gray-400 hover:text-gray-600 py-1">
-                  ← Cambiar nombre
-                </button>
               </form>
             )}
 
@@ -261,10 +257,6 @@ export default function EntrarPage() {
                 <button type="submit" disabled={pin.length !== 4 || loading}
                   className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-xl transition-colors">
                   {loading ? "Verificando..." : "Entrar →"}
-                </button>
-                <button type="button" onClick={() => { setStep("name"); setPin(""); setError(""); }}
-                  className="w-full text-sm text-gray-400 hover:text-gray-600 py-1">
-                  ← Cambiar nombre
                 </button>
               </form>
             )}
