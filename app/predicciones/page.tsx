@@ -200,53 +200,78 @@ export default function PrediccionesPage() {
                         </div>
                       </div>
 
-                      {/* Players chips */}
-                      <div className="px-3 py-3 flex flex-wrap gap-2">
-                        {players.map((player) => {
-                          const pred = predictions[player]?.[match.id];
-                          if (!pred) return (
-                            <div key={player} className="flex items-center gap-1 bg-gray-50 border border-dashed border-gray-200 rounded-lg px-2.5 py-1.5">
-                              <span className="text-xs text-gray-300">{player}</span>
-                            </div>
-                          );
+                      {/* Prediction bar */}
+                      {(() => {
+                        const homePlayers = players.filter(p => predictions[p]?.[match.id] && getResultLabel(predictions[p][match.id].g1, predictions[p][match.id].g2) === "1");
+                        const drawPlayers = players.filter(p => predictions[p]?.[match.id] && getResultLabel(predictions[p][match.id].g1, predictions[p][match.id].g2) === "X");
+                        const awayPlayers = players.filter(p => predictions[p]?.[match.id] && getResultLabel(predictions[p][match.id].g1, predictions[p][match.id].g2) === "2");
+                        const total = homePlayers.length + drawPlayers.length + awayPlayers.length;
 
-                          const predLabel = getResultLabel(pred.g1, pred.g2);
-                          const isExact = result && pred.g1 === result.g1 && pred.g2 === result.g2;
-                          const isCorrect = actualLabel && predLabel === actualLabel && !isExact;
-                          const isWrong = result && !isExact && !isCorrect;
+                        if (total === 0) return (
+                          <div className="px-4 py-3">
+                            <span className="text-xs text-gray-400 italic">Nadie ha predicho este partido aún</span>
+                          </div>
+                        );
 
-                          return (
-                            <div key={player} className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 border font-medium text-xs ${
-                              isExact   ? "bg-yellow-50 border-yellow-300 text-yellow-800" :
-                              isCorrect ? "bg-green-50 border-green-300 text-green-800" :
-                              isWrong   ? "bg-red-50 border-red-200 text-red-700" :
-                                          "bg-blue-50 border-blue-200 text-blue-800"
-                            }`}>
-                              <span>{player}</span>
-                              {result ? (
-                                <>
-                                  <span className="font-mono font-bold">{pred.g1}–{pred.g2}</span>
-                                  <span className={`text-xs px-1 rounded font-bold ${
-                                    predLabel === "1" ? "bg-blue-100 text-blue-600" :
-                                    predLabel === "X" ? "bg-gray-100 text-gray-500" :
-                                    "bg-orange-100 text-orange-600"
-                                  }`}>{predLabel}</span>
-                                </>
-                              ) : predLabel === "X" ? (
-                                <span className="text-xs font-semibold text-blue-400">Empate</span>
-                              ) : (
-                                <Flag code={predLabel === "1" ? match.homeFlag : match.awayFlag} size={16} />
-                              )}
-                              {isExact && <span>⭐</span>}
-                              {isCorrect && <span>✓</span>}
-                              {isWrong && <span>✗</span>}
+                        const homePct = Math.round((homePlayers.length / total) * 100);
+                        const drawPct = Math.round((drawPlayers.length / total) * 100);
+                        const awayPct = 100 - homePct - drawPct;
+
+                        return (
+                          <div className="px-4 py-3">
+                            {/* % labels */}
+                            <div className="flex justify-between text-xs mb-1.5">
+                              <div>
+                                <div className="font-semibold text-gray-700 truncate max-w-[90px]">{match.homeTeam}</div>
+                                <div className="font-black text-blue-500">{homePct}%</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="font-semibold text-gray-700">Empate</div>
+                                <div className="font-black text-gray-400">{drawPct}%</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-semibold text-gray-700 truncate max-w-[90px]">{match.awayTeam}</div>
+                                <div className="font-black text-orange-500">{awayPct}%</div>
+                              </div>
                             </div>
-                          );
-                        })}
-                        {playersWithPred.length === 0 && (
-                          <span className="text-xs text-gray-400 italic py-1">Nadie ha predicho este partido aún</span>
-                        )}
-                      </div>
+                            {/* Bar */}
+                            <div className="flex h-2.5 rounded-full overflow-hidden gap-px">
+                              {homePct > 0 && <div style={{width:`${homePct}%`}} className="bg-blue-500 rounded-l-full" />}
+                              {drawPct > 0 && <div style={{width:`${drawPct}%`}} className={`bg-gray-300 ${homePct === 0 ? "rounded-l-full" : ""} ${awayPct === 0 ? "rounded-r-full" : ""}`} />}
+                              {awayPct > 0 && <div style={{width:`${awayPct}%`}} className="bg-orange-400 rounded-r-full" />}
+                            </div>
+                            {/* Player name pills */}
+                            <div className="mt-2.5 flex flex-wrap gap-1">
+                              {players.filter(p => predictions[p]?.[match.id]).map(player => {
+                                const pred = predictions[player][match.id];
+                                const predLabel = getResultLabel(pred.g1, pred.g2);
+                                const isExact = result && pred.g1 === result.g1 && pred.g2 === result.g2;
+                                const isCorrect = result && actualLabel && predLabel === actualLabel && !isExact;
+                                const isWrong = result && !isExact && !isCorrect;
+                                return (
+                                  <span key={player} className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${
+                                    isExact   ? "bg-yellow-50 border-yellow-300 text-yellow-800" :
+                                    isCorrect ? "bg-green-50 border-green-300 text-green-700" :
+                                    isWrong   ? "bg-red-50 border-red-200 text-red-600" :
+                                    predLabel === "1" ? "bg-blue-50 border-blue-200 text-blue-700" :
+                                    predLabel === "X" ? "bg-gray-100 border-gray-200 text-gray-500" :
+                                                        "bg-orange-50 border-orange-200 text-orange-700"
+                                  }`}>
+                                    {player}
+                                    {result ? (
+                                      <span className="font-mono font-bold">{pred.g1}–{pred.g2} {isExact ? "⭐" : isCorrect ? "✓" : "✗"}</span>
+                                    ) : predLabel === "X" ? (
+                                      <span className="font-semibold">Emp</span>
+                                    ) : (
+                                      <Flag code={predLabel === "1" ? match.homeFlag : match.awayFlag} size={12} />
+                                    )}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
