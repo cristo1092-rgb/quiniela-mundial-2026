@@ -262,48 +262,30 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
           </div>
         </div>
 
-        {/* Vote distribution */}
-        {votes && votes.total > 0 && (
-          <div className="mt-2.5 border-t border-gray-100 pt-2.5 px-1">
-            <p className="text-[10px] text-gray-400 text-center mb-1.5 uppercase tracking-wide">¿Qué predicen los demás?</p>
-            <div className="flex items-center gap-1.5 justify-center">
-              {/* Home votes */}
-              <div className={`flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1 border ${
-                votes.home >= votes.away && votes.home >= votes.draw
-                  ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-100"
-              }`}>
-                <span className={`font-black text-sm ${votes.home >= votes.away && votes.home >= votes.draw ? "text-blue-600" : "text-gray-400"}`}>
-                  {votes.home}
-                </span>
-                <span className="text-[10px] text-gray-500 truncate w-full text-center leading-tight px-0.5">
-                  {match.homeTeam.split(" ")[0]}
-                </span>
+        {/* Vote distribution bar */}
+        {votes && votes.total > 0 && (() => {
+          const homePct = Math.round((votes.home / votes.total) * 100);
+          const drawPct = Math.round((votes.draw / votes.total) * 100);
+          const awayPct = 100 - homePct - drawPct;
+          return (
+            <div className="mt-2.5 border-t border-gray-100 pt-2.5 px-1">
+              <div className="flex justify-between text-[10px] mb-1">
+                <span className="font-bold text-blue-500">{homePct}%</span>
+                <span className="text-gray-400">{drawPct > 0 ? `Emp ${drawPct}%` : ""}</span>
+                <span className="font-bold text-orange-500">{awayPct}%</span>
               </div>
-              {/* Draw votes */}
-              <div className={`flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1 border ${
-                votes.draw >= votes.home && votes.draw >= votes.away
-                  ? "bg-gray-200 border-gray-300" : "bg-gray-50 border-gray-100"
-              }`}>
-                <span className={`font-black text-sm ${votes.draw >= votes.home && votes.draw >= votes.away ? "text-gray-600" : "text-gray-400"}`}>
-                  {votes.draw}
-                </span>
-                <span className="text-[10px] text-gray-500 text-center">Empate</span>
+              <div className="flex h-2 rounded-full overflow-hidden gap-px">
+                {homePct > 0 && <div style={{width:`${homePct}%`}} className="bg-blue-500 rounded-l-full" />}
+                {drawPct > 0 && <div style={{width:`${drawPct}%`}} className={`bg-gray-300 ${homePct === 0 ? "rounded-l-full" : ""} ${awayPct === 0 ? "rounded-r-full" : ""}`} />}
+                {awayPct > 0 && <div style={{width:`${awayPct}%`}} className="bg-orange-400 rounded-r-full" />}
               </div>
-              {/* Away votes */}
-              <div className={`flex-1 flex flex-col items-center gap-0.5 rounded-lg py-1 px-1 border ${
-                votes.away > votes.home && votes.away >= votes.draw
-                  ? "bg-orange-50 border-orange-200" : "bg-gray-50 border-gray-100"
-              }`}>
-                <span className={`font-black text-sm ${votes.away > votes.home && votes.away >= votes.draw ? "text-orange-500" : "text-gray-400"}`}>
-                  {votes.away}
-                </span>
-                <span className="text-[10px] text-gray-500 truncate w-full text-center leading-tight px-0.5">
-                  {match.awayTeam.split(" ")[0]}
-                </span>
+              <div className="flex justify-between text-[10px] mt-0.5 text-gray-400">
+                <span className="truncate max-w-[70px]">{match.homeTeam.split(" ")[0]}</span>
+                <span className="truncate max-w-[70px] text-right">{match.awayTeam.split(" ")[0]}</span>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Status row */}
         <div className="mt-3 flex items-center justify-between text-xs">
