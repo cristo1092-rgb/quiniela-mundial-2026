@@ -223,12 +223,20 @@ export default function PrediccionesPage() {
                                           "bg-blue-50 border-blue-200 text-blue-800"
                             }`}>
                               <span>{player}</span>
-                              <span className="font-mono font-bold">{pred.g1}–{pred.g2}</span>
-                              <span className={`text-xs px-1 rounded font-bold ${
-                                predLabel === "1" ? "bg-blue-100 text-blue-600" :
-                                predLabel === "X" ? "bg-gray-100 text-gray-500" :
-                                "bg-orange-100 text-orange-600"
-                              }`}>{predLabel}</span>
+                              {result ? (
+                                <>
+                                  <span className="font-mono font-bold">{pred.g1}–{pred.g2}</span>
+                                  <span className={`text-xs px-1 rounded font-bold ${
+                                    predLabel === "1" ? "bg-blue-100 text-blue-600" :
+                                    predLabel === "X" ? "bg-gray-100 text-gray-500" :
+                                    "bg-orange-100 text-orange-600"
+                                  }`}>{predLabel}</span>
+                                </>
+                              ) : predLabel === "X" ? (
+                                <span className="text-xs font-semibold text-blue-400">Empate</span>
+                              ) : (
+                                <Flag code={predLabel === "1" ? match.homeFlag : match.awayFlag} size={16} />
+                              )}
                               {isExact && <span>⭐</span>}
                               {isCorrect && <span>✓</span>}
                               {isWrong && <span>✗</span>}
