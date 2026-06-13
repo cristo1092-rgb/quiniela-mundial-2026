@@ -274,10 +274,10 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
                 <span className="text-gray-400">{drawPct > 0 ? `Emp ${drawPct}%` : ""}</span>
                 <span className="font-bold text-orange-500">{awayPct}%</span>
               </div>
-              <div className="flex h-2 rounded-full overflow-hidden gap-px">
-                {homePct > 0 && <div style={{width:`${homePct}%`}} className="bg-blue-500 rounded-l-full" />}
-                {drawPct > 0 && <div style={{width:`${drawPct}%`}} className={`bg-gray-300 ${homePct === 0 ? "rounded-l-full" : ""} ${awayPct === 0 ? "rounded-r-full" : ""}`} />}
-                {awayPct > 0 && <div style={{width:`${awayPct}%`}} className="bg-orange-400 rounded-r-full" />}
+              <div className="flex h-2 rounded-full overflow-hidden gap-[1px]">
+                {homePct > 0 && <div style={{width:`${homePct}%`}} className="bg-blue-500" />}
+                {drawPct > 0 && <div style={{width:`${drawPct}%`}} className="bg-gray-300" />}
+                {awayPct > 0 && <div style={{width:`${awayPct}%`}} className="bg-orange-400" />}
               </div>
               <div className="flex justify-between text-[10px] mt-0.5 text-gray-400">
                 <span className="truncate max-w-[70px]">{match.homeTeam.split(" ")[0]}</span>
