@@ -211,6 +211,7 @@ export default function PrediccionesPage() {
                           );
 
                           const predLabel = getResultLabel(pred.g1, pred.g2);
+                          const kicked = getMatchKickoffUTC(match).getTime() <= Date.now();
                           const isExact = result && pred.g1 === result.g1 && pred.g2 === result.g2;
                           const isCorrect = actualLabel && predLabel === actualLabel && !isExact;
                           const isWrong = result && !isExact && !isCorrect;
@@ -223,14 +224,16 @@ export default function PrediccionesPage() {
                                           "bg-blue-50 border-blue-200 text-blue-800"
                             }`}>
                               <span>{player}</span>
-                              {result ? (
+                              {kicked ? (
                                 <>
                                   <span className="font-mono font-bold">{pred.g1}–{pred.g2}</span>
-                                  <span className={`text-xs px-1 rounded font-bold ${
-                                    predLabel === "1" ? "bg-blue-100 text-blue-600" :
-                                    predLabel === "X" ? "bg-gray-100 text-gray-500" :
-                                    "bg-orange-100 text-orange-600"
-                                  }`}>{predLabel}</span>
+                                  {result && (
+                                    <span className={`text-xs px-1 rounded font-bold ${
+                                      predLabel === "1" ? "bg-blue-100 text-blue-600" :
+                                      predLabel === "X" ? "bg-gray-100 text-gray-500" :
+                                      "bg-orange-100 text-orange-600"
+                                    }`}>{predLabel}</span>
+                                  )}
                                 </>
                               ) : predLabel === "X" ? (
                                 <span className="text-xs font-semibold text-blue-400">Empate</span>
