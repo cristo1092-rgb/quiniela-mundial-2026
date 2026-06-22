@@ -43,7 +43,7 @@ export const STAGE_LABELS: Record<Stage, string> = {
   groupA: "Grupo A", groupB: "Grupo B", groupC: "Grupo C", groupD: "Grupo D",
   groupE: "Grupo E", groupF: "Grupo F", groupG: "Grupo G", groupH: "Grupo H",
   groupI: "Grupo I", groupJ: "Grupo J", groupK: "Grupo K", groupL: "Grupo L",
-  round32: "Octavos de Final", round16: "Dieciseisavos",
+  round32: "Ronda de 32", round16: "Octavos de Final",
   quarters: "Cuartos de Final", semis: "Semifinales",
   thirdPlace: "Tercer Lugar", final: "Final",
 };
@@ -197,49 +197,52 @@ export const MATCHES: Match[] = [
   m("L5", "groupL", "Panamá",    "Inglaterra","2026-06-27","15:00"), // 5PM ET
   m("L6", "groupL", "Ghana",     "Croacia",  "2026-06-27","15:00"), // 5PM ET
 
-  // ── DIECISEISAVOS (Round of 32) ───────────────────────────────────────────
-  m("R32_1",  "round32","TBD","TBD","2026-06-29","14:00","1A","2C"),
-  m("R32_2",  "round32","TBD","TBD","2026-06-29","20:00","1B","2D"),
-  m("R32_3",  "round32","TBD","TBD","2026-06-30","14:00","1C","2A"),
-  m("R32_4",  "round32","TBD","TBD","2026-06-30","20:00","1D","2B"),
-  m("R32_5",  "round32","TBD","TBD","2026-07-01","14:00","1E","2G"),
-  m("R32_6",  "round32","TBD","TBD","2026-07-01","20:00","1F","2H"),
-  m("R32_7",  "round32","TBD","TBD","2026-07-02","14:00","1G","2E"),
-  m("R32_8",  "round32","TBD","TBD","2026-07-02","20:00","1H","2F"),
-  m("R32_9",  "round32","TBD","TBD","2026-07-03","14:00","1I","2K"),
-  m("R32_10", "round32","TBD","TBD","2026-07-03","20:00","1J","2L"),
-  m("R32_11", "round32","TBD","TBD","2026-07-04","14:00","1K","2I"),
-  m("R32_12", "round32","TBD","TBD","2026-07-04","20:00","1L","2J"),
-  m("R32_13", "round32","TBD","TBD","2026-07-05","14:00","3ABC","3DEF"),
-  m("R32_14", "round32","TBD","TBD","2026-07-05","20:00","3GHI","3JKL"),
-  m("R32_15", "round32","TBD","TBD","2026-07-06","14:00","3ABD","3CEF"),
-  m("R32_16", "round32","TBD","TBD","2026-07-06","20:00","3GIJ","3HKL"),
+  // ── RONDA DE 32 ──────────────────────────────────────────────────────────
+  // Horarios FIFA oficiales convertidos a Monterrey (UTC-6).
+  // R32_N en orden cronológico; los labels de R16+ referencian estos IDs.
+  m("R32_1",  "round32","TBD","TBD","2026-06-28","13:00","2A",     "2B"),      // M73 SoFi (UTC-7)
+  m("R32_2",  "round32","TBD","TBD","2026-06-29","11:00","1C",     "2F"),      // M76 Houston (UTC-5)
+  m("R32_3",  "round32","TBD","TBD","2026-06-29","14:30","1E",     "3ABCDF"), // M74 Foxborough (UTC-4)
+  m("R32_4",  "round32","TBD","TBD","2026-06-29","19:00","1F",     "2C"),      // M75 Guadalupe (UTC-6)
+  m("R32_5",  "round32","TBD","TBD","2026-06-30","11:00","2E",     "2I"),      // M78 Arlington (UTC-5)
+  m("R32_6",  "round32","TBD","TBD","2026-06-30","15:00","1I",     "3CDFGH"), // M77 MetLife (UTC-4)
+  m("R32_7",  "round32","TBD","TBD","2026-06-30","19:00","1A",     "3CEFHI"), // M79 Azteca (UTC-6)
+  m("R32_8",  "round32","TBD","TBD","2026-07-01","10:00","1L",     "3EHIJK"), // M80 Atlanta (UTC-4)
+  m("R32_9",  "round32","TBD","TBD","2026-07-01","14:00","1G",     "3AEHIJ"), // M82 Seattle (UTC-7)
+  m("R32_10", "round32","TBD","TBD","2026-07-01","18:00","1D",     "3BEFIJ"), // M81 Santa Clara (UTC-7)
+  m("R32_11", "round32","TBD","TBD","2026-07-02","13:00","1H",     "2J"),      // M84 SoFi (UTC-7)
+  m("R32_12", "round32","TBD","TBD","2026-07-02","17:00","2K",     "2L"),      // M83 Toronto (UTC-4)
+  m("R32_13", "round32","TBD","TBD","2026-07-02","21:00","1B",     "3EFGIJ"), // M85 Vancouver (UTC-7)
+  m("R32_14", "round32","TBD","TBD","2026-07-03","12:00","2D",     "2G"),      // M88 Arlington (UTC-5)
+  m("R32_15", "round32","TBD","TBD","2026-07-03","16:00","1J",     "2H"),      // M86 Miami (UTC-4)
+  m("R32_16", "round32","TBD","TBD","2026-07-03","19:30","1K",     "3DEIJL"), // M87 Kansas City (UTC-5)
 
-  // ── OCTAVOS (Round of 16) ─────────────────────────────────────────────────
-  m("R16_1","round16","TBD","TBD","2026-07-09","14:00","G R32-1","G R32-2"),
-  m("R16_2","round16","TBD","TBD","2026-07-09","20:00","G R32-3","G R32-4"),
-  m("R16_3","round16","TBD","TBD","2026-07-10","14:00","G R32-5","G R32-6"),
-  m("R16_4","round16","TBD","TBD","2026-07-10","20:00","G R32-7","G R32-8"),
-  m("R16_5","round16","TBD","TBD","2026-07-11","14:00","G R32-9", "G R32-10"),
-  m("R16_6","round16","TBD","TBD","2026-07-11","20:00","G R32-11","G R32-12"),
-  m("R16_7","round16","TBD","TBD","2026-07-12","14:00","G R32-13","G R32-14"),
-  m("R16_8","round16","TBD","TBD","2026-07-12","20:00","G R32-15","G R32-16"),
+  // ── OCTAVOS DE FINAL (Round of 16) ────────────────────────────────────────
+  // M90 Houston → R16_1; M89 Philadelphia → R16_2; etc.
+  m("R16_1","round16","TBD","TBD","2026-07-04","11:00","G R32-1", "G R32-4"),  // M90: W73 vs W75
+  m("R16_2","round16","TBD","TBD","2026-07-04","15:00","G R32-3", "G R32-6"),  // M89: W74 vs W77
+  m("R16_3","round16","TBD","TBD","2026-07-05","14:00","G R32-2", "G R32-5"),  // M91: W76 vs W78
+  m("R16_4","round16","TBD","TBD","2026-07-05","18:00","G R32-7", "G R32-8"),  // M92: W79 vs W80
+  m("R16_5","round16","TBD","TBD","2026-07-06","13:00","G R32-11","G R32-12"), // M93: W84 vs W83
+  m("R16_6","round16","TBD","TBD","2026-07-06","18:00","G R32-9", "G R32-10"), // M94: W82 vs W81
+  m("R16_7","round16","TBD","TBD","2026-07-07","10:00","G R32-14","G R32-15"), // M95: W88 vs W86
+  m("R16_8","round16","TBD","TBD","2026-07-07","14:00","G R32-13","G R32-16"), // M96: W85 vs W87
 
-  // ── CUARTOS ───────────────────────────────────────────────────────────────
-  m("QF1","quarters","TBD","TBD","2026-07-14","14:00","G R16-1","G R16-2"),
-  m("QF2","quarters","TBD","TBD","2026-07-14","20:00","G R16-3","G R16-4"),
-  m("QF3","quarters","TBD","TBD","2026-07-15","14:00","G R16-5","G R16-6"),
-  m("QF4","quarters","TBD","TBD","2026-07-15","20:00","G R16-7","G R16-8"),
+  // ── CUARTOS DE FINAL ──────────────────────────────────────────────────────
+  m("QF1","quarters","TBD","TBD","2026-07-09","14:00","G R16-1","G R16-2"), // M97 Foxborough
+  m("QF2","quarters","TBD","TBD","2026-07-10","13:00","G R16-5","G R16-6"), // M98 SoFi
+  m("QF3","quarters","TBD","TBD","2026-07-11","15:00","G R16-3","G R16-4"), // M99 Miami
+  m("QF4","quarters","TBD","TBD","2026-07-11","19:00","G R16-7","G R16-8"), // M100 Kansas City
 
   // ── SEMIFINALES ───────────────────────────────────────────────────────────
-  m("SF1","semis","TBD","TBD","2026-07-17","19:00","G QF-1","G QF-2"),
-  m("SF2","semis","TBD","TBD","2026-07-18","19:00","G QF-3","G QF-4"),
+  m("SF1","semis","TBD","TBD","2026-07-14","13:00","G QF-1","G QF-2"), // M101 Arlington
+  m("SF2","semis","TBD","TBD","2026-07-15","13:00","G QF-3","G QF-4"), // M102 Atlanta
 
   // ── TERCER LUGAR ──────────────────────────────────────────────────────────
-  m("TP", "thirdPlace","TBD","TBD","2026-07-18","15:00","Perdedor SF-1","Perdedor SF-2"),
+  m("TP","thirdPlace","TBD","TBD","2026-07-18","15:00","Perdedor SF-1","Perdedor SF-2"), // M103 Miami
 
   // ── FINAL ─────────────────────────────────────────────────────────────────
-  m("FINAL","final","TBD","TBD","2026-07-19","19:00","G SF-1","G SF-2"),
+  m("FINAL","final","TBD","TBD","2026-07-19","13:00","G SF-1","G SF-2"), // M104 MetLife
 ];
 
 export function getMatchById(id: string): Match | undefined {

@@ -186,11 +186,10 @@ export function isGroupComplete(stage: Stage, results: Record<string, Result>): 
 // ── R32 bracket auto-fill ─────────────────────────────────────────────────────
 
 /**
- * Maps each R32 match slot to who should play based on group standings.
- * R32_1-12 are determined by group 1st/2nd place finishers.
- * R32_13-16 use the 8 best 3rd-place teams (seeded by rank).
- *
- * Only returns slots where BOTH groups involved are complete.
+ * Maps each R32 match to the correct group positions per the official FIFA 2026 bracket.
+ * - 1st/2nd place slots: deterministic once both groups finish.
+ * - 3rd-place slots: filled by the best-ranked qualifying 3rd-place team
+ *   from a specific set of eligible groups (per FIFA draw rules).
  */
 export interface KnockoutSlot {
   matchId: string;
@@ -200,41 +199,66 @@ export interface KnockoutSlot {
   awayFlag: string;
   homeLabel: string;
   awayLabel: string;
-  ready: boolean; // true = both groups complete
+  ready: boolean; // true = all source groups are complete
 }
 
-// Bracket: [matchId, homeSrc, awaySrc]
-// homeSrc/awaySrc = { group, pos } where pos 0=1st, 1=2nd, 2=3rd
-type Src = { group: Stage; pos: 0 | 1 } | { third: number }; // third = rank among best 3rd (0-7)
+// pos 0 = 1st place, pos 1 = 2nd place from that group
+// eligible = best 3rd-place team from any of these groups (top-8 only when all done)
+type Src = { group: Stage; pos: 0 | 1 } | { eligible: Stage[] };
 
 const R32_MAP: Array<{ matchId: string; home: Src; away: Src; homeLabel: string; awayLabel: string }> = [
-  { matchId: "R32_1",  home: { group: "groupA", pos: 0 }, away: { group: "groupC", pos: 1 }, homeLabel: "1A", awayLabel: "2C" },
-  { matchId: "R32_2",  home: { group: "groupB", pos: 0 }, away: { group: "groupD", pos: 1 }, homeLabel: "1B", awayLabel: "2D" },
-  { matchId: "R32_3",  home: { group: "groupC", pos: 0 }, away: { group: "groupA", pos: 1 }, homeLabel: "1C", awayLabel: "2A" },
-  { matchId: "R32_4",  home: { group: "groupD", pos: 0 }, away: { group: "groupB", pos: 1 }, homeLabel: "1D", awayLabel: "2B" },
-  { matchId: "R32_5",  home: { group: "groupE", pos: 0 }, away: { group: "groupG", pos: 1 }, homeLabel: "1E", awayLabel: "2G" },
-  { matchId: "R32_6",  home: { group: "groupF", pos: 0 }, away: { group: "groupH", pos: 1 }, homeLabel: "1F", awayLabel: "2H" },
-  { matchId: "R32_7",  home: { group: "groupG", pos: 0 }, away: { group: "groupE", pos: 1 }, homeLabel: "1G", awayLabel: "2E" },
-  { matchId: "R32_8",  home: { group: "groupH", pos: 0 }, away: { group: "groupF", pos: 1 }, homeLabel: "1H", awayLabel: "2F" },
-  { matchId: "R32_9",  home: { group: "groupI", pos: 0 }, away: { group: "groupK", pos: 1 }, homeLabel: "1I", awayLabel: "2K" },
-  { matchId: "R32_10", home: { group: "groupJ", pos: 0 }, away: { group: "groupL", pos: 1 }, homeLabel: "1J", awayLabel: "2L" },
-  { matchId: "R32_11", home: { group: "groupK", pos: 0 }, away: { group: "groupI", pos: 1 }, homeLabel: "1K", awayLabel: "2I" },
-  { matchId: "R32_12", home: { group: "groupL", pos: 0 }, away: { group: "groupJ", pos: 1 }, homeLabel: "1L", awayLabel: "2J" },
-  // 3rd-place slots: seeded by best-to-worst 3rd place ranking
-  { matchId: "R32_13", home: { third: 0 }, away: { third: 7 }, homeLabel: "3°M-1", awayLabel: "3°M-8" },
-  { matchId: "R32_14", home: { third: 1 }, away: { third: 6 }, homeLabel: "3°M-2", awayLabel: "3°M-7" },
-  { matchId: "R32_15", home: { third: 2 }, away: { third: 5 }, homeLabel: "3°M-3", awayLabel: "3°M-6" },
-  { matchId: "R32_16", home: { third: 3 }, away: { third: 4 }, homeLabel: "3°M-4", awayLabel: "3°M-5" },
+  // M73 (Jun 28): 2A vs 2B
+  { matchId: "R32_1",  home: { group: "groupA", pos: 1 }, away: { group: "groupB", pos: 1 }, homeLabel: "2A",     awayLabel: "2B" },
+  // M76 (Jun 29): 1C vs 2F
+  { matchId: "R32_2",  home: { group: "groupC", pos: 0 }, away: { group: "groupF", pos: 1 }, homeLabel: "1C",     awayLabel: "2F" },
+  // M74 (Jun 29): 1E vs 3°(A/B/C/D/F)
+  { matchId: "R32_3",  home: { group: "groupE", pos: 0 }, away: { eligible: ["groupA","groupB","groupC","groupD","groupF"] }, homeLabel: "1E", awayLabel: "3ABCDF" },
+  // M75 (Jun 29): 1F vs 2C
+  { matchId: "R32_4",  home: { group: "groupF", pos: 0 }, away: { group: "groupC", pos: 1 }, homeLabel: "1F",     awayLabel: "2C" },
+  // M78 (Jun 30): 2E vs 2I
+  { matchId: "R32_5",  home: { group: "groupE", pos: 1 }, away: { group: "groupI", pos: 1 }, homeLabel: "2E",     awayLabel: "2I" },
+  // M77 (Jun 30): 1I vs 3°(C/D/F/G/H)
+  { matchId: "R32_6",  home: { group: "groupI", pos: 0 }, away: { eligible: ["groupC","groupD","groupF","groupG","groupH"] }, homeLabel: "1I", awayLabel: "3CDFGH" },
+  // M79 (Jun 30): 1A vs 3°(C/E/F/H/I)
+  { matchId: "R32_7",  home: { group: "groupA", pos: 0 }, away: { eligible: ["groupC","groupE","groupF","groupH","groupI"] }, homeLabel: "1A", awayLabel: "3CEFHI" },
+  // M80 (Jul 1): 1L vs 3°(E/H/I/J/K)
+  { matchId: "R32_8",  home: { group: "groupL", pos: 0 }, away: { eligible: ["groupE","groupH","groupI","groupJ","groupK"] }, homeLabel: "1L", awayLabel: "3EHIJK" },
+  // M82 (Jul 1): 1G vs 3°(A/E/H/I/J)
+  { matchId: "R32_9",  home: { group: "groupG", pos: 0 }, away: { eligible: ["groupA","groupE","groupH","groupI","groupJ"] }, homeLabel: "1G", awayLabel: "3AEHIJ" },
+  // M81 (Jul 1): 1D vs 3°(B/E/F/I/J)
+  { matchId: "R32_10", home: { group: "groupD", pos: 0 }, away: { eligible: ["groupB","groupE","groupF","groupI","groupJ"] }, homeLabel: "1D", awayLabel: "3BEFIJ" },
+  // M84 (Jul 2): 1H vs 2J
+  { matchId: "R32_11", home: { group: "groupH", pos: 0 }, away: { group: "groupJ", pos: 1 }, homeLabel: "1H",     awayLabel: "2J" },
+  // M83 (Jul 2): 2K vs 2L
+  { matchId: "R32_12", home: { group: "groupK", pos: 1 }, away: { group: "groupL", pos: 1 }, homeLabel: "2K",     awayLabel: "2L" },
+  // M85 (Jul 2): 1B vs 3°(E/F/G/I/J)
+  { matchId: "R32_13", home: { group: "groupB", pos: 0 }, away: { eligible: ["groupE","groupF","groupG","groupI","groupJ"] }, homeLabel: "1B", awayLabel: "3EFGIJ" },
+  // M88 (Jul 3): 2D vs 2G
+  { matchId: "R32_14", home: { group: "groupD", pos: 1 }, away: { group: "groupG", pos: 1 }, homeLabel: "2D",     awayLabel: "2G" },
+  // M86 (Jul 3): 1J vs 2H
+  { matchId: "R32_15", home: { group: "groupJ", pos: 0 }, away: { group: "groupH", pos: 1 }, homeLabel: "1J",     awayLabel: "2H" },
+  // M87 (Jul 3): 1K vs 3°(D/E/I/J/L)
+  { matchId: "R32_16", home: { group: "groupK", pos: 0 }, away: { eligible: ["groupD","groupE","groupI","groupJ","groupL"] }, homeLabel: "1K", awayLabel: "3DEIJL" },
 ];
 
 function resolveTeam(
   src: Src,
   allStandings: Record<Stage, TeamStats[]>,
-  bestThird: TeamStats[]
+  thirdPlace: TeamStats[],    // all 12 3rd-place teams, ranked
+  bestThird: TeamStats[],     // top 8 of the above
+  assignedThird: Set<string>,
+  allGroupsComplete: boolean
 ): { name: string; flag: string } | null {
-  if ("third" in src) {
-    const t = bestThird[src.third];
-    return t ? { name: t.team, flag: t.flag } : null;
+  if ("eligible" in src) {
+    // When all groups done → only consider confirmed top-8 teams from eligible groups.
+    // Provisional → any 3rd-place team from eligible groups that has played.
+    const pool = allGroupsComplete ? bestThird : thirdPlace;
+    const best = pool.find(
+      t => (src.eligible as Stage[]).includes(t.group) && t.played > 0 && !assignedThird.has(t.team)
+    );
+    if (!best) return null;
+    assignedThird.add(best.team);
+    return { name: best.team, flag: best.flag };
   }
   const team = allStandings[src.group]?.[src.pos];
   return team ? { name: team.team, flag: team.flag } : null;
@@ -300,23 +324,24 @@ export function getR32Assignments(
   allStandings: Record<Stage, TeamStats[]>,
   results: Record<string, Result>
 ): KnockoutSlot[] {
-  const { bestThird } = calcAdvancing(allStandings);
+  const { thirdPlace, bestThird } = calcAdvancing(allStandings);
   const allGroupsComplete = GROUP_STAGES.every((s) => isGroupComplete(s, results));
+  const assignedThird = new Set<string>();
 
   return R32_MAP.map(({ matchId, home, away, homeLabel, awayLabel }) => {
-    // Check if the relevant groups are complete
+    // Slot is "ready" (confirmed, can predict) only when all source groups are done
+    const hasThird = "eligible" in home || "eligible" in away;
     let ready = false;
-    if ("third" in home) {
-      ready = allGroupsComplete; // 3rd place needs ALL groups done
+    if (hasThird) {
+      ready = allGroupsComplete; // 3rd-place needs all 12 groups to be final
     } else {
-      const hSrc = home as { group: Stage; pos: 0 | 1 };
-      const hDone = isGroupComplete(hSrc.group, results);
-      const aDone = "third" in away ? allGroupsComplete : isGroupComplete((away as { group: Stage; pos: 0 | 1 }).group, results);
-      ready = hDone && aDone;
+      const hGroup = (home as { group: Stage; pos: 0 | 1 }).group;
+      const aGroup = (away as { group: Stage; pos: 0 | 1 }).group;
+      ready = isGroupComplete(hGroup, results) && isGroupComplete(aGroup, results);
     }
 
-    const h = resolveTeam(home, allStandings, bestThird);
-    const a = resolveTeam(away, allStandings, bestThird);
+    const h = resolveTeam(home, allStandings, thirdPlace, bestThird, assignedThird, allGroupsComplete);
+    const a = resolveTeam(away, allStandings, thirdPlace, bestThird, assignedThird, allGroupsComplete);
 
     return {
       matchId,
