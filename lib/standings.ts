@@ -240,6 +240,61 @@ function resolveTeam(
   return team ? { name: team.team, flag: team.flag } : null;
 }
 
+export function computeAutoKnockoutTeams(
+  results: Record<string, Result>,
+  knockoutWinners: Record<string, "home" | "away"> = {}
+): Record<string, string> {
+  const teams: Record<string, string> = {};
+
+  // R32: from group standings
+  const allStandings = calcAllStandings(results);
+  for (const slot of getR32Assignments(allStandings, results)) {
+    if (!slot.ready) continue;
+    teams[`${slot.matchId}_home`]     = slot.home;
+    teams[`${slot.matchId}_away`]     = slot.away;
+    teams[`${slot.matchId}_homeFlag`] = slot.homeFlag;
+    teams[`${slot.matchId}_awayFlag`] = slot.awayFlag;
+  }
+
+  // R16 → Final: from previous round results + knockoutWinners for penalty cases
+  // Labels: "G R32-1", "G R16-1", "G QF-1", "G SF-1", "Perdedor SF-1"
+  const re = /^(G|Perdedor) ([A-Z0-9]+)-(\d+)$/;
+  for (const match of MATCHES) {
+    for (const side of ["home", "away"] as const) {
+      const label = side === "home" ? match.homeLabel : match.awayLabel;
+      if (!label) continue;
+      const m = label.match(re);
+      if (!m) continue;
+
+      const [, type, prefix, num] = m;
+      // "R32" → "R32_1", "QF" → "QF1", "SF" → "SF1"
+      const srcId = prefix.length > 2 ? `${prefix}_${num}` : `${prefix}${num}`;
+      const res = results[srcId];
+      if (!res) continue;
+
+      let winnerSide: "home" | "away" | null = null;
+      if (res.g1 !== res.g2) {
+        winnerSide = res.g1 > res.g2 ? "home" : "away";
+      } else if (knockoutWinners[srcId]) {
+        winnerSide = knockoutWinners[srcId];
+      }
+      if (!winnerSide) continue;
+
+      const wantWinner = type === "G";
+      const teamKey = wantWinner ? winnerSide : (winnerSide === "home" ? "away" : "home");
+
+      const name = teams[`${srcId}_${teamKey}`];
+      const flag = teams[`${srcId}_${teamKey}Flag`];
+      if (!name) continue;
+
+      teams[`${match.id}_${side}`]     = name;
+      teams[`${match.id}_${side}Flag`] = flag;
+    }
+  }
+
+  return teams;
+}
+
 export function getR32Assignments(
   allStandings: Record<Stage, TeamStats[]>,
   results: Record<string, Result>

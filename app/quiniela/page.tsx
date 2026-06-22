@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { ref, onValue, set, remove } from "firebase/database";
@@ -20,7 +20,7 @@ import {
 } from "@/lib/matches";
 import { Prediction, Result, calcRanking } from "@/lib/scoring";
 import { VoteDistribution } from "@/components/MatchCard";
-import { calcGroupStandings, calcAllStandings, calcAdvancing, groupMatchesPlayed, isGroupComplete } from "@/lib/standings";
+import { calcGroupStandings, calcAllStandings, calcAdvancing, groupMatchesPlayed, isGroupComplete, computeAutoKnockoutTeams } from "@/lib/standings";
 import {
   isFirebaseConfigured,
   getLocalResults,
@@ -28,6 +28,7 @@ import {
   saveLocalPrediction,
   deleteLocalPrediction,
   getLocalKnockoutTeams,
+  getLocalKnockoutWinners,
 } from "@/lib/localFallback";
 import MatchCard from "@/components/MatchCard";
 import GroupStandings from "@/components/GroupStandings";
@@ -43,6 +44,7 @@ export default function QuinielaPage() {
   const [predictions, setPredictions] = useState<Record<string, Prediction>>({});
   const [results, setResults] = useState<Record<string, Result>>({});
   const [knockoutTeams, setKnockoutTeams] = useState<Record<string, string>>({});
+  const [knockoutWinners, setKnockoutWinners] = useState<Record<string, "home" | "away">>({});
   const [activeStage, setActiveStage] = useState<Stage>("groupA");
   const [saving, setSaving] = useState<string | null>(null);
   const [allPredictions, setAllPredictions] = useState<Record<string, Record<string, Prediction>>>({});
@@ -73,10 +75,11 @@ export default function QuinielaPage() {
     }
 
     if (!isFirebaseConfigured()) {
-      // Listen for changes from admin tab via storage events
+      setKnockoutWinners(getLocalKnockoutWinners());
       const handler = (e: StorageEvent) => {
         if (e.key === "quiniela_results") setResults(getLocalResults());
         if (e.key === "quiniela_knockout") setKnockoutTeams(getLocalKnockoutTeams());
+        if (e.key === "quiniela_knockout_winners") setKnockoutWinners(getLocalKnockoutWinners());
       };
       window.addEventListener("storage", handler);
       return () => window.removeEventListener("storage", handler);
@@ -94,10 +97,13 @@ export default function QuinielaPage() {
     const unsubKO = onValue(ref(db, "knockoutTeams"), (snap) => {
       setKnockoutTeams({ ...getLocalKnockoutTeams(), ...(snap.val() ?? {}) });
     });
+    const unsubKOW = onValue(ref(db, "knockoutWinners"), (snap) => {
+      setKnockoutWinners({ ...getLocalKnockoutWinners(), ...(snap.val() ?? {}) });
+    });
     const unsubAllPreds = onValue(ref(db, "predictions"), (snap) => {
       setAllPredictions(snap.val() ?? {});
     });
-    return () => { unsubResults(); unsubKO(); unsubAllPreds(); };
+    return () => { unsubResults(); unsubKO(); unsubKOW(); unsubAllPreds(); };
   }, []);
 
   // Load this player's predictions from localStorage + Firebase
@@ -188,15 +194,22 @@ export default function QuinielaPage() {
     });
   }, []);
 
-  // Merge static match data with dynamic knockout team names
+  // Auto-computed knockout teams from standings + results (recalculates on results/winners change)
+  const autoKnockoutTeams = useMemo(
+    () => computeAutoKnockoutTeams(results, knockoutWinners),
+    [results, knockoutWinners]
+  );
+
+  // Merge static match data with knockout teams (manual admin overrides auto-computed)
   function resolveMatch(match: Match): Match {
     if (match.homeTeam !== "TBD" && match.awayTeam !== "TBD") return match;
+    const merged = { ...autoKnockoutTeams, ...knockoutTeams };
     return {
       ...match,
-      homeTeam: knockoutTeams[`${match.id}_home`] ?? "TBD",
-      awayTeam: knockoutTeams[`${match.id}_away`] ?? "TBD",
-      homeFlag: knockoutTeams[`${match.id}_homeFlag`] ?? "🏳️",
-      awayFlag: knockoutTeams[`${match.id}_awayFlag`] ?? "🏳️",
+      homeTeam: merged[`${match.id}_home`] ?? "TBD",
+      awayTeam: merged[`${match.id}_away`] ?? "TBD",
+      homeFlag: merged[`${match.id}_homeFlag`] ?? "🏳️",
+      awayFlag: merged[`${match.id}_awayFlag`] ?? "🏳️",
     };
   }
 

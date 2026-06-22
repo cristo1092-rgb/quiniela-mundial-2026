@@ -98,6 +98,29 @@ export function saveLocalKnockoutTeam(slot: string, value: string): void {
   );
 }
 
+// ── Knockout winners (penalty advancement) ────────────────────────────────────
+
+const KO_WINNERS_KEY = "quiniela_knockout_winners";
+
+export function getLocalKnockoutWinners(): Record<string, "home" | "away"> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(KO_WINNERS_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+}
+
+export function saveLocalKnockoutWinner(matchId: string, side: "home" | "away"): void {
+  const current = getLocalKnockoutWinners();
+  current[matchId] = side;
+  const serialized = JSON.stringify(current);
+  localStorage.setItem(KO_WINNERS_KEY, serialized);
+  window.dispatchEvent(
+    new StorageEvent("storage", { key: KO_WINNERS_KEY, newValue: serialized })
+  );
+}
+
 // ── Allowed Players (access control) ─────────────────────────────────────────
 
 const PLAYERS_KEY = "quiniela_allowed_players";

@@ -11,6 +11,7 @@ import {
   saveLocalResult,
   deleteLocalResult,
   saveLocalKnockoutTeam,
+  saveLocalKnockoutWinner,
   getAllowedPlayers,
   addAllowedPlayer,
   removeAllowedPlayer,
@@ -30,6 +31,7 @@ export default function AdminPage() {
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [g1, setG1] = useState("");
   const [g2, setG2] = useState("");
+  const [penaltyWinner, setPenaltyWinner] = useState<"home" | "away" | "">("");
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
 
@@ -124,23 +126,26 @@ export default function AdminPage() {
   async function handleSaveResult(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedMatchId || g1 === "" || g2 === "") return;
+    const isKnockout = !MATCHES.find((m) => m.id === selectedMatchId)?.stage.startsWith("group");
+    const isDraw = parseInt(g1) === parseInt(g2);
+    if (isKnockout && isDraw && !penaltyWinner) return; // require penalty winner for knockout draws
     setSaving(true);
     const result = { g1: parseInt(g1), g2: parseInt(g2) };
-    // Always save to localStorage first (instant, works without Firebase)
     saveLocalResult(selectedMatchId, result);
     setResults((prev) => ({ ...prev, [selectedMatchId]: result }));
-    // Also save to Firebase if configured
+    if (isKnockout && isDraw && penaltyWinner) {
+      saveLocalKnockoutWinner(selectedMatchId, penaltyWinner);
+    }
     if (isFirebaseConfigured()) {
       try {
         await set(ref(db, `results/${selectedMatchId}`), result);
-      } catch {
-        // Firebase error — localStorage already saved
-      }
+        if (isKnockout && isDraw && penaltyWinner) {
+          await set(ref(db, `knockoutWinners/${selectedMatchId}`), penaltyWinner);
+        }
+      } catch { /* localStorage already saved */ }
     }
-    setSavedMsg(`✓ Resultado guardado: ${selectedMatchId} ${g1}–${g2}`);
-    setG1("");
-    setG2("");
-    setSelectedMatchId("");
+    setSavedMsg(`✓ Resultado guardado: ${selectedMatchId} ${g1}–${g2}${isKnockout && isDraw ? ` (avanza: ${penaltyWinner === "home" ? selectedMatch?.homeTeam : selectedMatch?.awayTeam})` : ""}`);
+    setG1(""); setG2(""); setSelectedMatchId(""); setPenaltyWinner("");
     setSaving(false);
     setTimeout(() => setSavedMsg(""), 4000);
   }
@@ -382,9 +387,32 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* Penalty winner — only for knockout draws */}
+          {selectedMatch &&
+            !selectedMatch.stage.startsWith("group") &&
+            g1 !== "" && g2 !== "" &&
+            parseInt(g1) === parseInt(g2) && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+              <p className="text-sm font-bold text-amber-800 mb-3">⚽ Empate en eliminatoria — ¿quién avanzó (penales)?</p>
+              <div className="flex gap-3">
+                <label className={`flex-1 flex items-center gap-2 border-2 rounded-xl p-3 cursor-pointer transition-colors ${penaltyWinner === "home" ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"}`}>
+                  <input type="radio" name="penaltyWinner" value="home" checked={penaltyWinner === "home"} onChange={() => setPenaltyWinner("home")} className="accent-green-600" />
+                  <span className="font-semibold text-sm">{selectedMatch.homeTeam !== "TBD" ? selectedMatch.homeTeam : (knockoutTeams[`${selectedMatch.id}_home`] ?? "Local")}</span>
+                </label>
+                <label className={`flex-1 flex items-center gap-2 border-2 rounded-xl p-3 cursor-pointer transition-colors ${penaltyWinner === "away" ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"}`}>
+                  <input type="radio" name="penaltyWinner" value="away" checked={penaltyWinner === "away"} onChange={() => setPenaltyWinner("away")} className="accent-green-600" />
+                  <span className="font-semibold text-sm">{selectedMatch.awayTeam !== "TBD" ? selectedMatch.awayTeam : (knockoutTeams[`${selectedMatch.id}_away`] ?? "Visitante")}</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           <button
             type="submit"
-            disabled={!selectedMatchId || g1 === "" || g2 === "" || saving}
+            disabled={
+              !selectedMatchId || g1 === "" || g2 === "" || saving ||
+              (!selectedMatch?.stage.startsWith("group") && parseInt(g1) === parseInt(g2) && !penaltyWinner)
+            }
             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors"
           >
             {saving ? "Guardando..." : "Guardar resultado"}
