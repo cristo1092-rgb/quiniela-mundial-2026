@@ -1,10 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { ref, set, onValue, remove } from "firebase/database";
 import { MATCHES, Match, GROUP_STAGES, STAGE_LABELS } from "@/lib/matches";
 import { Result } from "@/lib/scoring";
-import { calcAllStandings, calcAdvancing, groupMatchesPlayed, getR32Assignments, isGroupComplete } from "@/lib/standings";
+import { calcAllStandings, calcAdvancing, groupMatchesPlayed, getR32Assignments, isGroupComplete, computeAutoKnockoutTeams } from "@/lib/standings";
 import {
   isFirebaseConfigured,
   getLocalResults,
@@ -261,6 +261,20 @@ export default function AdminPage() {
     setTimeout(() => setSavedMsg(""), 5000);
   }
 
+  // Auto-computed + manual merged knockout teams (same priority as quiniela page)
+  const autoKnockoutTeams = useMemo(() => computeAutoKnockoutTeams(results), [results]);
+  const mergedKnockoutTeams = useMemo(
+    () => ({ ...autoKnockoutTeams, ...knockoutTeams }),
+    [autoKnockoutTeams, knockoutTeams]
+  );
+
+  function resolvedKOName(matchId: string, side: "home" | "away"): string {
+    const name = mergedKnockoutTeams[`${matchId}_${side}`];
+    if (name) return name;
+    const m = MATCHES.find((x) => x.id === matchId);
+    return (side === "home" ? m?.homeLabel : m?.awayLabel) ?? "TBD";
+  }
+
   const selectedMatch: Match | undefined = MATCHES.find((m) => m.id === selectedMatchId);
   const groupMatches = MATCHES.filter((m) => m.stage.startsWith("group"));
   const knockoutMatches = MATCHES.filter((m) => !m.stage.startsWith("group"));
@@ -337,8 +351,7 @@ export default function AdminPage() {
               <optgroup label="Eliminatorias">
                 {knockoutMatches.map((m) => (
                   <option key={m.id} value={m.id}>
-                    [{m.id}] {knockoutTeams[`${m.id}_home`] ?? m.homeLabel ?? "TBD"} vs{" "}
-                    {knockoutTeams[`${m.id}_away`] ?? m.awayLabel ?? "TBD"}
+                    [{m.id}] {resolvedKOName(m.id, "home")} vs {resolvedKOName(m.id, "away")}
                     {results[m.id] ? ` ✓ (${results[m.id].g1}-${results[m.id].g2})` : ""}
                   </option>
                 ))}
@@ -387,25 +400,47 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Penalty winner — only for knockout draws */}
-          {selectedMatch &&
-            !selectedMatch.stage.startsWith("group") &&
-            g1 !== "" && g2 !== "" &&
-            parseInt(g1) === parseInt(g2) && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-              <p className="text-sm font-bold text-amber-800 mb-3">⚽ Empate en eliminatoria — ¿quién avanzó (penales)?</p>
-              <div className="flex gap-3">
-                <label className={`flex-1 flex items-center gap-2 border-2 rounded-xl p-3 cursor-pointer transition-colors ${penaltyWinner === "home" ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"}`}>
-                  <input type="radio" name="penaltyWinner" value="home" checked={penaltyWinner === "home"} onChange={() => setPenaltyWinner("home")} className="accent-green-600" />
-                  <span className="font-semibold text-sm">{selectedMatch.homeTeam !== "TBD" ? selectedMatch.homeTeam : (knockoutTeams[`${selectedMatch.id}_home`] ?? "Local")}</span>
-                </label>
-                <label className={`flex-1 flex items-center gap-2 border-2 rounded-xl p-3 cursor-pointer transition-colors ${penaltyWinner === "away" ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"}`}>
-                  <input type="radio" name="penaltyWinner" value="away" checked={penaltyWinner === "away"} onChange={() => setPenaltyWinner("away")} className="accent-green-600" />
-                  <span className="font-semibold text-sm">{selectedMatch.awayTeam !== "TBD" ? selectedMatch.awayTeam : (knockoutTeams[`${selectedMatch.id}_away`] ?? "Visitante")}</span>
-                </label>
+          {/* Quien avanza — always shown for knockout matches once scores are entered */}
+          {selectedMatch && !selectedMatch.stage.startsWith("group") && g1 !== "" && g2 !== "" && (() => {
+            const gHome = parseInt(g1);
+            const gAway = parseInt(g2);
+            const isDraw = gHome === gAway;
+            const autoWinner: "home" | "away" | null = isDraw ? null : gHome > gAway ? "home" : "away";
+            const homeName = resolvedKOName(selectedMatch.id, "home");
+            const awayName = resolvedKOName(selectedMatch.id, "away");
+            return (
+              <div className={`border rounded-xl p-4 ${isDraw ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
+                <p className="text-sm font-bold text-gray-700 mb-3">
+                  {isDraw ? "⚽ Empate — ¿quién avanzó en penales?" : "✓ Ganador automático"}
+                </p>
+                <div className="flex gap-3">
+                  {(["home", "away"] as const).map((side) => {
+                    const name = side === "home" ? homeName : awayName;
+                    const isAuto = autoWinner === side;
+                    const isSelected = isDraw ? penaltyWinner === side : autoWinner === side;
+                    return (
+                      <label key={side} className={`flex-1 flex items-center gap-2 border-2 rounded-xl p-3 transition-colors ${isSelected ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"} ${isDraw ? "cursor-pointer" : "opacity-70"}`}>
+                        <input
+                          type="radio"
+                          name="penaltyWinner"
+                          value={side}
+                          checked={isSelected}
+                          disabled={!isDraw}
+                          onChange={() => isDraw && setPenaltyWinner(side)}
+                          className="accent-green-600"
+                        />
+                        <span className="font-semibold text-sm">{name}</span>
+                        {isAuto && <span className="text-xs text-green-600 ml-auto">{gHome > gAway && side === "home" ? `${g1}–${g2}` : `${g1}–${g2}`}</span>}
+                      </label>
+                    );
+                  })}
+                </div>
+                {isDraw && !penaltyWinner && (
+                  <p className="text-xs text-amber-600 mt-2">Selecciona el equipo que avanzó en penales para continuar.</p>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           <button
             type="submit"
@@ -435,8 +470,7 @@ export default function AdminPage() {
               <option value="">Selecciona un partido...</option>
               {knockoutMatches.map((m) => (
                 <option key={m.id} value={m.id}>
-                  [{m.id}] {knockoutTeams[`${m.id}_home`] ?? m.homeLabel} vs{" "}
-                  {knockoutTeams[`${m.id}_away`] ?? m.awayLabel}
+                  [{m.id}] {resolvedKOName(m.id, "home")} vs {resolvedKOName(m.id, "away")}
                 </option>
               ))}
             </select>
