@@ -51,6 +51,27 @@ function Stepper({ value, onChange, disabled }: { value: string; onChange: (v: s
   );
 }
 
+/** Converts raw match labels into readable slot descriptions. */
+function formatSlotLabel(label: string): string {
+  // "1A" → "1° Gr. A" | "2C" → "2° Gr. C"
+  const groupPos = label.match(/^([12])([A-L])$/);
+  if (groupPos) return `${groupPos[1]}° Gr. ${groupPos[2]}`;
+
+  // "3ABC" → "3° Mejor A/B/C"
+  const thirdGroup = label.match(/^3([A-L]+)$/);
+  if (thirdGroup) return `3° Mejor ${thirdGroup[1].split("").join("/")}`;
+
+  // "G R32-1" → "G. R32-1" | "G R16-3" → "G. R16-3" | "G QF-2" → "G. QF-2"
+  const winner = label.match(/^G ([A-Z0-9]+-\d+)$/);
+  if (winner) return `G. ${winner[1]}`;
+
+  // "Perdedor SF-1" → "Perd. SF-1"
+  const loser = label.match(/^Perdedor ([A-Z]+-\d+)$/);
+  if (loser) return `Perd. ${loser[1]}`;
+
+  return label;
+}
+
 function useCountdown(deadline: Date) {
   const [timeLeft, setTimeLeft] = useState(() => deadline.getTime() - Date.now());
   useEffect(() => {
@@ -198,9 +219,14 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
             <Flag code={match.homeFlag} size={32} />
             <span className="text-xs font-bold text-gray-800 leading-tight truncate w-full px-1">
               {isTBD && match.homeLabel
-                ? <span className="text-gray-400 font-normal italic">{match.homeLabel}</span>
+                ? <span className="text-gray-400 font-normal italic">{formatSlotLabel(match.homeLabel)}</span>
                 : match.homeTeam}
             </span>
+            {isProvisional && match.homeLabel && (
+              <span className="text-[10px] text-purple-400 font-normal italic leading-none">
+                {formatSlotLabel(match.homeLabel)}
+              </span>
+            )}
           </div>
 
           {/* Steppers */}
@@ -261,9 +287,14 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
             <Flag code={match.awayFlag} size={32} />
             <span className="text-xs font-bold text-gray-800 leading-tight truncate w-full px-1">
               {isTBD && match.awayLabel
-                ? <span className="text-gray-400 font-normal italic">{match.awayLabel}</span>
+                ? <span className="text-gray-400 font-normal italic">{formatSlotLabel(match.awayLabel)}</span>
                 : match.awayTeam}
             </span>
+            {isProvisional && match.awayLabel && (
+              <span className="text-[10px] text-purple-400 font-normal italic leading-none">
+                {formatSlotLabel(match.awayLabel)}
+              </span>
+            )}
           </div>
         </div>
 
