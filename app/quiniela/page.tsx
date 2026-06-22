@@ -194,8 +194,8 @@ export default function QuinielaPage() {
     });
   }, []);
 
-  // Auto-computed knockout teams from standings + results (recalculates on results/winners change)
-  const autoKnockoutTeams = useMemo(
+  // Auto-computed knockout teams + provisional set (recalculates when results change)
+  const { teams: autoKnockoutTeams, provisional: provisionalIds } = useMemo(
     () => computeAutoKnockoutTeams(results, knockoutWinners),
     [results, knockoutWinners]
   );
@@ -204,12 +204,14 @@ export default function QuinielaPage() {
   function resolveMatch(match: Match): Match {
     if (match.homeTeam !== "TBD" && match.awayTeam !== "TBD") return match;
     const merged = { ...autoKnockoutTeams, ...knockoutTeams };
+    const isProvisional = provisionalIds.has(match.id) && !knockoutTeams[`${match.id}_home`];
     return {
       ...match,
       homeTeam: merged[`${match.id}_home`] ?? "TBD",
       awayTeam: merged[`${match.id}_away`] ?? "TBD",
       homeFlag: merged[`${match.id}_homeFlag`] ?? "🏳️",
       awayFlag: merged[`${match.id}_awayFlag`] ?? "🏳️",
+      provisional: isProvisional,
     };
   }
 

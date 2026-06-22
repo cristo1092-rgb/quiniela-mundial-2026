@@ -262,7 +262,7 @@ export default function AdminPage() {
   }
 
   // Auto-computed + manual merged knockout teams (same priority as quiniela page)
-  const autoKnockoutTeams = useMemo(() => computeAutoKnockoutTeams(results), [results]);
+  const { teams: autoKnockoutTeams } = useMemo(() => computeAutoKnockoutTeams(results), [results]);
   const mergedKnockoutTeams = useMemo(
     () => ({ ...autoKnockoutTeams, ...knockoutTeams }),
     [autoKnockoutTeams, knockoutTeams]

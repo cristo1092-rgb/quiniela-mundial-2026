@@ -104,8 +104,9 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
 
   const isLocked = !!result;
   const isTBD = match.homeTeam === "TBD" || match.awayTeam === "TBD";
+  const isProvisional = !!match.provisional;
   const kickoffPast = isKickoffPast(match);
-  const canPredict = !isLocked && !isTBD && !kickoffPast;
+  const canPredict = !isLocked && !isTBD && !isProvisional && !kickoffPast;
   const minutesToClose = Math.floor((getDeadlineUTC(match).getTime() - Date.now()) / 60000);
   const closingSoon = canPredict && minutesToClose <= 60 && minutesToClose > 0;
 
@@ -171,6 +172,10 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
             ) : isTBD ? (
               <span className="text-[10px] font-bold bg-gray-100 text-gray-400 px-2 py-0.5 rounded-full">
                 ⏳ Por definir
+              </span>
+            ) : isProvisional ? (
+              <span className="text-[10px] font-bold bg-purple-50 text-purple-500 px-2 py-0.5 rounded-full flex items-center gap-1">
+                🔮 Tentativo
               </span>
             ) : closingSoon ? (
               <span className="text-[10px] font-bold bg-amber-50 text-amber-600 px-2 py-0.5 rounded-full flex items-center gap-1">

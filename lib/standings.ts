@@ -243,21 +243,22 @@ function resolveTeam(
 export function computeAutoKnockoutTeams(
   results: Record<string, Result>,
   knockoutWinners: Record<string, "home" | "away"> = {}
-): Record<string, string> {
+): { teams: Record<string, string>; provisional: Set<string> } {
   const teams: Record<string, string> = {};
+  const provisional = new Set<string>();
 
-  // R32: from group standings
+  // R32: from group standings — include provisional (incomplete groups) for display
   const allStandings = calcAllStandings(results);
   for (const slot of getR32Assignments(allStandings, results)) {
-    if (!slot.ready) continue;
+    if (slot.home === "TBD" && slot.away === "TBD") continue; // no results yet
     teams[`${slot.matchId}_home`]     = slot.home;
     teams[`${slot.matchId}_away`]     = slot.away;
     teams[`${slot.matchId}_homeFlag`] = slot.homeFlag;
     teams[`${slot.matchId}_awayFlag`] = slot.awayFlag;
+    if (!slot.ready) provisional.add(slot.matchId); // group not finished → tentativo
   }
 
   // R16 → Final: from previous round results + knockoutWinners for penalty cases
-  // Labels: "G R32-1", "G R16-1", "G QF-1", "G SF-1", "Perdedor SF-1"
   const re = /^(G|Perdedor) ([A-Z0-9]+)-(\d+)$/;
   for (const match of MATCHES) {
     for (const side of ["home", "away"] as const) {
@@ -267,7 +268,6 @@ export function computeAutoKnockoutTeams(
       if (!m) continue;
 
       const [, type, prefix, num] = m;
-      // "R32" → "R32_1", "QF" → "QF1", "SF" → "SF1"
       const srcId = prefix.length > 2 ? `${prefix}_${num}` : `${prefix}${num}`;
       const res = results[srcId];
       if (!res) continue;
@@ -289,10 +289,11 @@ export function computeAutoKnockoutTeams(
 
       teams[`${match.id}_${side}`]     = name;
       teams[`${match.id}_${side}Flag`] = flag;
+      if (provisional.has(srcId)) provisional.add(match.id); // inherit provisional status
     }
   }
 
-  return teams;
+  return { teams, provisional };
 }
 
 export function getR32Assignments(

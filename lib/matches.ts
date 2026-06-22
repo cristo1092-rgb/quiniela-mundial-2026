@@ -15,6 +15,8 @@ export interface Match {
   time: string;
   homeLabel?: string;
   awayLabel?: string;
+  /** True when teams are based on current (incomplete) group standings — subject to change */
+  provisional?: boolean;
 }
 
 /** Returns the prediction deadline: 30 min before kickoff (Monterrey CDT, UTC-5). */
