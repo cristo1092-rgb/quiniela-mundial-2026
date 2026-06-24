@@ -11,8 +11,8 @@ type JornadaTab = 1 | 2 | 3 | "elim";
 
 const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
   1: ["2026-06-11", "2026-06-17"],
-  2: ["2026-06-18", "2026-06-24"],
-  3: ["2026-06-25", "2026-06-27"],
+  2: ["2026-06-18", "2026-06-23"],
+  3: ["2026-06-24", "2026-06-27"],
 };
 const JORNADA_LABELS: Record<JornadaTab, string> = {
   1: "Jornada 1",
@@ -24,7 +24,7 @@ const JORNADA_LABELS: Record<JornadaTab, string> = {
 function getCurrentJornada(): JornadaTab {
   const today = new Date().toISOString().slice(0, 10);
   if (today < "2026-06-18") return 1;
-  if (today < "2026-06-25") return 2;
+  if (today < "2026-06-24") return 2;
   if (today <= "2026-06-27") return 3;
   return "elim";
 }
