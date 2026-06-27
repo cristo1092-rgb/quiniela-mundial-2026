@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { Match, isKickoffPast, getDeadlineUTC, getMatchKickoffUTC } from "@/lib/matches";
+import { Match, isKickoffPast, getDeadlineUTC, getMatchKickoffUTC, KNOCKOUT_STAGES } from "@/lib/matches";
 import { Prediction, Result, getResultLabel } from "@/lib/scoring";
 import Flag from "@/components/Flag";
 
@@ -126,6 +126,7 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
   const isLocked = !!result;
   const isTBD = match.homeTeam === "TBD" || match.awayTeam === "TBD";
   const isProvisional = !!match.provisional;
+  const isKnockout = KNOCKOUT_STAGES.includes(match.stage as typeof KNOCKOUT_STAGES[number]);
   const kickoffPast = isKickoffPast(match);
   const canPredict = !isLocked && !isTBD && !isProvisional && !kickoffPast;
   const minutesToClose = Math.floor((getDeadlineUTC(match).getTime() - Date.now()) / 60000);
@@ -249,6 +250,13 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
               </div>
             </div>
 
+            {/* 90-min note for knockout matches */}
+            {isKnockout && canPredict && (
+              <span className="text-[10px] text-gray-400 text-center leading-tight">
+                Predicción por los 90 min
+              </span>
+            )}
+
             {/* Kickoff time */}
             <span className="text-xs text-gray-500 font-medium flex items-center gap-1">
               ⚽ {kickoffDate.toLocaleString("es-MX", {
@@ -277,7 +285,7 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
                     : "bg-orange-100 text-orange-700"
                   : "bg-gray-100 text-gray-500"
               }`}>
-                {localLabel === "1" ? `Gana ${match.homeTeam}` : localLabel === "2" ? `Gana ${match.awayTeam}` : "Empate"}
+                {localLabel === "1" ? `Gana ${match.homeTeam}` : localLabel === "2" ? `Gana ${match.awayTeam}` : isKnockout ? "T. Extra / Pen." : "Empate"}
               </span>
             )}
           </div>

@@ -320,6 +320,37 @@ export function computeAutoKnockoutTeams(
   return { teams, provisional };
 }
 
+/** Returns all 3^n possible outcomes for n remaining matches. */
+function enumerateOutcomes(n: number): Array<Array<{ g1: number; g2: number }>> {
+  if (n === 0) return [[]];
+  const BASE = [{ g1: 1, g2: 0 }, { g1: 1, g2: 1 }, { g1: 0, g2: 1 }] as const;
+  return BASE.flatMap((o) => enumerateOutcomes(n - 1).map((r) => [o, ...r]));
+}
+
+/**
+ * Returns true only when every possible outcome of the remaining group matches
+ * produces the same team in `pos` (0 = 1st, 1 = 2nd).
+ * This lets knockout slots open early without waiting for all 6 group games.
+ */
+function isPositionConfirmed(
+  stage: Stage,
+  pos: 0 | 1,
+  results: Record<string, Result>
+): boolean {
+  const groupMatches = MATCHES.filter((m) => m.stage === stage);
+  const remaining = groupMatches.filter((m) => !results[m.id]);
+  if (remaining.length === 0) return true;
+  const seen = new Set<string>();
+  for (const outcome of enumerateOutcomes(remaining.length)) {
+    const sim = { ...results };
+    remaining.forEach((m, i) => { sim[m.id] = outcome[i]; });
+    const team = calcGroupStandings(stage, sim)[pos]?.team ?? "";
+    seen.add(team);
+    if (seen.size > 1) return false; // ambiguous → not confirmed yet
+  }
+  return seen.size === 1 && !seen.has("");
+}
+
 export function getR32Assignments(
   allStandings: Record<Stage, TeamStats[]>,
   results: Record<string, Result>
@@ -329,15 +360,16 @@ export function getR32Assignments(
   const assignedThird = new Set<string>();
 
   return R32_MAP.map(({ matchId, home, away, homeLabel, awayLabel }) => {
-    // Slot is "ready" (confirmed, can predict) only when all source groups are done
+    // Slot is "ready" when both positions are mathematically confirmed
     const hasThird = "eligible" in home || "eligible" in away;
     let ready = false;
     if (hasThird) {
-      ready = allGroupsComplete; // 3rd-place needs all 12 groups to be final
+      ready = allGroupsComplete; // 3rd-place needs all 12 groups final
     } else {
-      const hGroup = (home as { group: Stage; pos: 0 | 1 }).group;
-      const aGroup = (away as { group: Stage; pos: 0 | 1 }).group;
-      ready = isGroupComplete(hGroup, results) && isGroupComplete(aGroup, results);
+      const hSrc = home as { group: Stage; pos: 0 | 1 };
+      const aSrc = away as { group: Stage; pos: 0 | 1 };
+      ready = isPositionConfirmed(hSrc.group, hSrc.pos, results) &&
+              isPositionConfirmed(aSrc.group, aSrc.pos, results);
     }
 
     const h = resolveTeam(home, allStandings, thirdPlace, bestThird, assignedThird, allGroupsComplete);

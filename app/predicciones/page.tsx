@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
-import { MATCHES, KNOCKOUT_STAGES, GROUP_STAGES, getMatchKickoffUTC } from "@/lib/matches";
+import { MATCHES, KNOCKOUT_STAGES, GROUP_STAGES, getMatchKickoffUTC, Stage } from "@/lib/matches";
 import Flag from "@/components/Flag";
 import { Prediction, Result, getResultLabel } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
@@ -236,7 +236,9 @@ export default function PrediccionesPage() {
                                   )}
                                 </>
                               ) : predLabel === "X" ? (
-                                <span className="text-xs font-semibold text-blue-400">Empate</span>
+                                <span className="text-xs font-semibold text-blue-400">
+                                  {KNOCKOUT_STAGES.includes(match.stage as Stage) ? "T. Extra" : "Empate"}
+                                </span>
                               ) : (
                                 <Flag code={predLabel === "1" ? match.homeFlag : match.awayFlag} size={16} />
                               )}
