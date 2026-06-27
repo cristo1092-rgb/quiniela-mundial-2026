@@ -1,11 +1,12 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
-import { MATCHES, KNOCKOUT_STAGES, GROUP_STAGES, getMatchKickoffUTC, Stage } from "@/lib/matches";
+import { MATCHES, Match, KNOCKOUT_STAGES, GROUP_STAGES, getMatchKickoffUTC, Stage } from "@/lib/matches";
 import Flag from "@/components/Flag";
-import { Prediction, Result, getResultLabel } from "@/lib/scoring";
-import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
+import { Prediction, Result, KnockoutDecision, getResultLabel } from "@/lib/scoring";
+import { isFirebaseConfigured, getLocalResults, getLocalKnockoutTeams, getLocalKnockoutWinners } from "@/lib/localFallback";
+import { computeAutoKnockoutTeams } from "@/lib/standings";
 
 type JornadaTab = 1 | 2 | 3 | "elim";
 
@@ -37,10 +38,15 @@ function formatDateHeader(dateStr: string): string {
 export default function PrediccionesPage() {
   const [predictions, setPredictions] = useState<Record<string, Record<string, Prediction>>>({});
   const [results, setResults] = useState<Record<string, Result>>({});
+  const [knockoutTeams, setKnockoutTeams] = useState<Record<string, string>>({});
+  const [knockoutWinners, setKnockoutWinners] = useState<Record<string, "home" | "away">>({});
+  const [knockoutDecisions, setKnockoutDecisions] = useState<Record<string, KnockoutDecision>>({});
   const [activeJornada, setActiveJornada] = useState<JornadaTab>(getCurrentJornada);
 
   useEffect(() => {
     setResults(getLocalResults());
+    setKnockoutTeams(getLocalKnockoutTeams());
+    setKnockoutWinners(getLocalKnockoutWinners());
     if (!isFirebaseConfigured()) return;
     const unsubR = onValue(ref(db, "results"), (snap) => {
       setResults({ ...getLocalResults(), ...(snap.val() ?? {}) });
@@ -48,8 +54,34 @@ export default function PrediccionesPage() {
     const unsubP = onValue(ref(db, "predictions"), (snap) => {
       setPredictions(snap.val() ?? {});
     });
-    return () => { unsubR(); unsubP(); };
+    const unsubKO = onValue(ref(db, "knockoutTeams"), (snap) => {
+      setKnockoutTeams({ ...getLocalKnockoutTeams(), ...(snap.val() ?? {}) });
+    });
+    const unsubKOW = onValue(ref(db, "knockoutWinners"), (snap) => {
+      setKnockoutWinners({ ...getLocalKnockoutWinners(), ...(snap.val() ?? {}) });
+    });
+    const unsubKOD = onValue(ref(db, "knockoutDecision"), (snap) => {
+      setKnockoutDecisions(snap.val() ?? {});
+    });
+    return () => { unsubR(); unsubP(); unsubKO(); unsubKOW(); unsubKOD(); };
   }, []);
+
+  const { teams: autoKnockoutTeams } = useMemo(
+    () => computeAutoKnockoutTeams(results, knockoutWinners),
+    [results, knockoutWinners]
+  );
+
+  function resolveMatch(match: Match): Match {
+    if (match.homeTeam !== "TBD" && match.awayTeam !== "TBD") return match;
+    const merged = { ...autoKnockoutTeams, ...knockoutTeams };
+    return {
+      ...match,
+      homeTeam: merged[`${match.id}_home`] ?? "TBD",
+      awayTeam: merged[`${match.id}_away`] ?? "TBD",
+      homeFlag: merged[`${match.id}_homeFlag`] ?? "🏳️",
+      awayFlag: merged[`${match.id}_awayFlag`] ?? "🏳️",
+    };
+  }
 
   const players = Object.keys(predictions).sort();
 
@@ -57,7 +89,9 @@ export default function PrediccionesPage() {
   function getJornadaMatches() {
     let base;
     if (activeJornada === "elim") {
-      base = MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number]));
+      base = MATCHES
+        .filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number]))
+        .map(resolveMatch);
     } else {
       const [start, end] = JORNADA_RANGES[activeJornada];
       base = MATCHES.filter((m) =>
@@ -97,7 +131,7 @@ export default function PrediccionesPage() {
       <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-4 px-4 scrollbar-hide">
         {([1, 2, 3, "elim"] as JornadaTab[]).map((j) => {
           const jMatches = (() => {
-            if (j === "elim") return MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number]));
+            if (j === "elim") return MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number])).map(resolveMatch);
             const [start, end] = JORNADA_RANGES[j];
             return MATCHES.filter((m) => GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number]) && m.date >= start && m.date <= end);
           })();
