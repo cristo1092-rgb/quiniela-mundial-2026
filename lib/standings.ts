@@ -392,15 +392,12 @@ function computeThirdPlaceVariants(
     });
   };
 
+  // Only confirm 3rd-place slots when ALL group results are uploaded.
+  // Enumeration of partial results produces false positives because J/K/L
+  // 3rd-place teams can displace eligible teams from the top-8 ranking,
+  // and that interaction only stabilises once the full picture is known.
   if (remaining.length === 0) {
     simulate(results);
-  } else if (remaining.length <= 8) {
-    // 3^8 = 6561 simulations max — acceptable in browser
-    for (const outcome of enumerateOutcomes(remaining.length)) {
-      const sim = { ...results };
-      remaining.forEach((m, idx) => { sim[m.id] = outcome[idx]; });
-      simulate(sim);
-    }
   }
 
   return variantsByIndex;
