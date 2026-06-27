@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { Match, isKickoffPast, getDeadlineUTC, getMatchKickoffUTC, KNOCKOUT_STAGES } from "@/lib/matches";
-import { Prediction, Result, getResultLabel } from "@/lib/scoring";
+import { Prediction, Result, KnockoutDecision, getResultLabel } from "@/lib/scoring";
 import Flag from "@/components/Flag";
 
 export interface VoteDistribution {
@@ -15,6 +15,7 @@ interface Props {
   match: Match;
   prediction?: Prediction;
   result?: Result;
+  knockoutDecision?: KnockoutDecision;
   onPredict: (matchId: string, pred: Prediction) => void;
   onDelete?: (matchId: string) => void;
   saving?: boolean;
@@ -94,7 +95,7 @@ function formatCountdown(ms: number) {
   return `${s}s`;
 }
 
-export default function MatchCard({ match, prediction, result, onPredict, onDelete, saving, votes }: Props) {
+export default function MatchCard({ match, prediction, result, knockoutDecision, onPredict, onDelete, saving, votes }: Props) {
   const [localG1, setLocalG1] = useState<string>(prediction !== undefined ? String(prediction.g1) : "");
   const [localG2, setLocalG2] = useState<string>(prediction !== undefined ? String(prediction.g2) : "");
   const [justSaved, setJustSaved] = useState(false);
@@ -165,17 +166,26 @@ export default function MatchCard({ match, prediction, result, onPredict, onDele
 
       {/* Result banner */}
       {result && (
-        <div className={`px-4 py-2.5 flex items-center justify-between ${
+        <div className={`px-4 py-2.5 flex items-center justify-between gap-2 ${
           isExact         ? "bg-yellow-400 text-yellow-900" :
           isResultCorrect ? "bg-green-500 text-white" :
           isWrong         ? "bg-red-400 text-white" :
                             "bg-gray-700 text-white"
         }`}>
-          <span className="text-xs font-medium opacity-80">Resultado oficial</span>
-          <span className="font-mono font-black text-2xl tracking-widest">
-            {result.g1} — {result.g2}
-          </span>
-          <span className="text-xs font-bold">
+          <span className="text-xs font-medium opacity-80 shrink-0">Resultado oficial</span>
+          <div className="flex flex-col items-center">
+            <span className="font-mono font-black text-2xl tracking-widest leading-none">
+              {result.g1} — {result.g2}
+            </span>
+            {knockoutDecision && (
+              <span className="text-[10px] font-semibold opacity-90 mt-0.5">
+                {knockoutDecision.method === "et"
+                  ? `⚡ T.E. ${knockoutDecision.etG1}–${knockoutDecision.etG2}`
+                  : `🥅 Pen. ${knockoutDecision.penHome}–${knockoutDecision.penAway}`}
+              </span>
+            )}
+          </div>
+          <span className="text-xs font-bold shrink-0">
             {!prediction  ? "—" :
              isExact      ? "⭐ +5" :
              isResultCorrect ? "✓ +3" : "✗ 0"}

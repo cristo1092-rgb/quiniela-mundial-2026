@@ -3,7 +3,7 @@
  * Also used to persist data in the same browser session while testing.
  */
 
-import { Prediction, Result } from "./scoring";
+import { Prediction, Result, KnockoutDecision } from "./scoring";
 
 export function isFirebaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL ?? "";
@@ -119,6 +119,21 @@ export function saveLocalKnockoutWinner(matchId: string, side: "home" | "away"):
   window.dispatchEvent(
     new StorageEvent("storage", { key: KO_WINNERS_KEY, newValue: serialized })
   );
+}
+
+// ── Knockout Decisions (ET / Penales info) ────────────────────────────────────
+
+const KO_DECISION_KEY = "quiniela_knockout_decisions";
+
+export function getLocalKnockoutDecisions(): Record<string, KnockoutDecision> {
+  if (typeof window === "undefined") return {};
+  try { return JSON.parse(localStorage.getItem(KO_DECISION_KEY) ?? "{}"); } catch { return {}; }
+}
+
+export function saveLocalKnockoutDecision(matchId: string, decision: KnockoutDecision): void {
+  const current = getLocalKnockoutDecisions();
+  current[matchId] = decision;
+  localStorage.setItem(KO_DECISION_KEY, JSON.stringify(current));
 }
 
 // ── Allowed Players (access control) ─────────────────────────────────────────

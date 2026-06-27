@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { ref, set, onValue, remove } from "firebase/database";
 import { MATCHES, Match, GROUP_STAGES, STAGE_LABELS } from "@/lib/matches";
-import { Result } from "@/lib/scoring";
+import { Result, KnockoutDecision } from "@/lib/scoring";
 import { calcAllStandings, calcAdvancing, groupMatchesPlayed, getR32Assignments, isGroupComplete, computeAutoKnockoutTeams } from "@/lib/standings";
 import {
   isFirebaseConfigured,
@@ -12,6 +12,8 @@ import {
   deleteLocalResult,
   saveLocalKnockoutTeam,
   saveLocalKnockoutWinner,
+  saveLocalKnockoutDecision,
+  getLocalKnockoutDecisions,
   getAllowedPlayers,
   addAllowedPlayer,
   removeAllowedPlayer,
@@ -31,7 +33,12 @@ export default function AdminPage() {
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [g1, setG1] = useState("");
   const [g2, setG2] = useState("");
-  const [penaltyWinner, setPenaltyWinner] = useState<"home" | "away" | "">("");
+  // Extra-time / penalty decision state
+  const [decisionMethod, setDecisionMethod] = useState<"et" | "pen" | "">("");
+  const [etG1, setEtG1] = useState("");
+  const [etG2, setEtG2] = useState("");
+  const [penHome, setPenHome] = useState("");
+  const [penAway, setPenAway] = useState("");
   const [saving, setSaving] = useState(false);
   const [savedMsg, setSavedMsg] = useState("");
 
@@ -128,24 +135,49 @@ export default function AdminPage() {
     if (!selectedMatchId || g1 === "" || g2 === "") return;
     const isKnockout = !MATCHES.find((m) => m.id === selectedMatchId)?.stage.startsWith("group");
     const isDraw = parseInt(g1) === parseInt(g2);
-    if (isKnockout && isDraw && !penaltyWinner) return; // require penalty winner for knockout draws
+
+    // Derive who advanced and how from the decision UI
+    let decidedWinner: "home" | "away" | null = null;
+    let knockoutDecision: KnockoutDecision | null = null;
+    if (isKnockout && isDraw) {
+      if (decisionMethod === "et" && etG1 !== "" && etG2 !== "") {
+        const h = parseInt(etG1), a = parseInt(etG2);
+        if (h === a) return; // ET can't be a draw
+        decidedWinner = h > a ? "home" : "away";
+        knockoutDecision = { method: "et", etG1: h, etG2: a };
+      } else if (decisionMethod === "pen" && penHome !== "" && penAway !== "") {
+        const h = parseInt(penHome), a = parseInt(penAway);
+        if (h === a) return; // Penalties can't be a draw
+        decidedWinner = h > a ? "home" : "away";
+        knockoutDecision = { method: "pen", penHome: h, penAway: a };
+      } else {
+        return; // incomplete decision
+      }
+    }
+
     setSaving(true);
     const result = { g1: parseInt(g1), g2: parseInt(g2) };
     saveLocalResult(selectedMatchId, result);
     setResults((prev) => ({ ...prev, [selectedMatchId]: result }));
-    if (isKnockout && isDraw && penaltyWinner) {
-      saveLocalKnockoutWinner(selectedMatchId, penaltyWinner);
+    if (decidedWinner) {
+      saveLocalKnockoutWinner(selectedMatchId, decidedWinner);
+      if (knockoutDecision) saveLocalKnockoutDecision(selectedMatchId, knockoutDecision);
     }
     if (isFirebaseConfigured()) {
       try {
         await set(ref(db, `results/${selectedMatchId}`), result);
-        if (isKnockout && isDraw && penaltyWinner) {
-          await set(ref(db, `knockoutWinners/${selectedMatchId}`), penaltyWinner);
+        if (decidedWinner) {
+          await set(ref(db, `knockoutWinners/${selectedMatchId}`), decidedWinner);
+          if (knockoutDecision) await set(ref(db, `knockoutDecision/${selectedMatchId}`), knockoutDecision);
         }
       } catch { /* localStorage already saved */ }
     }
-    setSavedMsg(`✓ Resultado guardado: ${selectedMatchId} ${g1}–${g2}${isKnockout && isDraw ? ` (avanza: ${penaltyWinner === "home" ? selectedMatch?.homeTeam : selectedMatch?.awayTeam})` : ""}`);
-    setG1(""); setG2(""); setSelectedMatchId(""); setPenaltyWinner("");
+    const advancesLabel = decidedWinner
+      ? ` (avanza ${knockoutDecision?.method === "et" ? "T.E." : "pen."}: ${decidedWinner === "home" ? selectedMatch?.homeTeam : selectedMatch?.awayTeam})`
+      : "";
+    setSavedMsg(`✓ Resultado guardado: ${selectedMatchId} ${g1}–${g2}${advancesLabel}`);
+    setG1(""); setG2(""); setSelectedMatchId("");
+    setDecisionMethod(""); setEtG1(""); setEtG2(""); setPenHome(""); setPenAway("");
     setSaving(false);
     setTimeout(() => setSavedMsg(""), 4000);
   }
@@ -400,43 +432,96 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Quien avanza — always shown for knockout matches once scores are entered */}
+          {/* Knockout: cómo se definió — only shown when scores are a draw */}
           {selectedMatch && !selectedMatch.stage.startsWith("group") && g1 !== "" && g2 !== "" && (() => {
             const gHome = parseInt(g1);
             const gAway = parseInt(g2);
             const isDraw = gHome === gAway;
-            const autoWinner: "home" | "away" | null = isDraw ? null : gHome > gAway ? "home" : "away";
             const homeName = resolvedKOName(selectedMatch.id, "home");
             const awayName = resolvedKOName(selectedMatch.id, "away");
-            return (
-              <div className={`border rounded-xl p-4 ${isDraw ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200"}`}>
-                <p className="text-sm font-bold text-gray-700 mb-3">
-                  {isDraw ? "⚽ Empate — ¿quién avanzó en penales?" : "✓ Ganador automático"}
-                </p>
-                <div className="flex gap-3">
-                  {(["home", "away"] as const).map((side) => {
-                    const name = side === "home" ? homeName : awayName;
-                    const isAuto = autoWinner === side;
-                    const isSelected = isDraw ? penaltyWinner === side : autoWinner === side;
-                    return (
-                      <label key={side} className={`flex-1 flex items-center gap-2 border-2 rounded-xl p-3 transition-colors ${isSelected ? "border-green-500 bg-green-50" : "border-gray-200 bg-white"} ${isDraw ? "cursor-pointer" : "opacity-70"}`}>
-                        <input
-                          type="radio"
-                          name="penaltyWinner"
-                          value={side}
-                          checked={isSelected}
-                          disabled={!isDraw}
-                          onChange={() => isDraw && setPenaltyWinner(side)}
-                          className="accent-green-600"
-                        />
-                        <span className="font-semibold text-sm">{name}</span>
-                        {isAuto && <span className="text-xs text-green-600 ml-auto">{gHome > gAway && side === "home" ? `${g1}–${g2}` : `${g1}–${g2}`}</span>}
-                      </label>
-                    );
-                  })}
+
+            if (!isDraw) {
+              const autoWinner = gHome > gAway ? homeName : awayName;
+              return (
+                <div className="border rounded-xl p-4 bg-gray-50 border-gray-200">
+                  <p className="text-sm font-bold text-gray-700">✓ Ganador automático: {autoWinner}</p>
                 </div>
-                {isDraw && !penaltyWinner && (
-                  <p className="text-xs text-amber-600 mt-2">Selecciona el equipo que avanzó en penales para continuar.</p>
+              );
+            }
+
+            const etValid = etG1 !== "" && etG2 !== "" && parseInt(etG1) !== parseInt(etG2);
+            const penValid = penHome !== "" && penAway !== "" && parseInt(penHome) !== parseInt(penAway);
+
+            return (
+              <div className="border rounded-xl p-4 bg-amber-50 border-amber-200 space-y-4">
+                <p className="text-sm font-bold text-gray-700">⚽ Empate — ¿Cómo se decidió?</p>
+
+                {/* Method selector */}
+                <div className="flex gap-3">
+                  {(["et", "pen"] as const).map((method) => (
+                    <label key={method} className={`flex-1 flex items-center gap-2 border-2 rounded-xl p-3 cursor-pointer transition-colors ${decisionMethod === method ? "border-amber-500 bg-amber-100" : "border-gray-200 bg-white"}`}>
+                      <input type="radio" name="decisionMethod" value={method} checked={decisionMethod === method}
+                        onChange={() => { setDecisionMethod(method); setEtG1(""); setEtG2(""); setPenHome(""); setPenAway(""); }}
+                        className="accent-amber-600" />
+                      <span className="font-semibold text-sm">{method === "et" ? "⚡ Tiempo Extra" : "🥅 Penales"}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* ET score */}
+                {decisionMethod === "et" && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-gray-500">Marcador final en tiempo extra:</p>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">{homeName}</label>
+                        <input type="number" min="0" value={etG1} onChange={(e) => setEtG1(e.target.value)}
+                          className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                      </div>
+                      <span className="text-gray-400 font-bold text-xl pb-2">–</span>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">{awayName}</label>
+                        <input type="number" min="0" value={etG2} onChange={(e) => setEtG2(e.target.value)}
+                          className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                      </div>
+                    </div>
+                    {etG1 !== "" && etG2 !== "" && parseInt(etG1) === parseInt(etG2) && (
+                      <p className="text-xs text-red-500">El marcador en tiempo extra no puede ser empate.</p>
+                    )}
+                    {etValid && (
+                      <p className="text-xs text-green-600 font-medium">✓ Avanza: {parseInt(etG1) > parseInt(etG2) ? homeName : awayName}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Penalty score */}
+                {decisionMethod === "pen" && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-gray-500">Resultado en la tanda de penales:</p>
+                    <div className="flex items-end gap-2">
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">{homeName}</label>
+                        <input type="number" min="0" value={penHome} onChange={(e) => setPenHome(e.target.value)}
+                          className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                      </div>
+                      <span className="text-gray-400 font-bold text-xl pb-2">–</span>
+                      <div className="flex-1">
+                        <label className="block text-xs text-gray-400 mb-1">{awayName}</label>
+                        <input type="number" min="0" value={penAway} onChange={(e) => setPenAway(e.target.value)}
+                          className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                      </div>
+                    </div>
+                    {penHome !== "" && penAway !== "" && parseInt(penHome) === parseInt(penAway) && (
+                      <p className="text-xs text-red-500">Los penales no pueden terminar en empate.</p>
+                    )}
+                    {penValid && (
+                      <p className="text-xs text-green-600 font-medium">✓ Avanza: {parseInt(penHome) > parseInt(penAway) ? homeName : awayName}</p>
+                    )}
+                  </div>
+                )}
+
+                {!decisionMethod && (
+                  <p className="text-xs text-amber-600">Selecciona cómo se definió el partido para continuar.</p>
                 )}
               </div>
             );
@@ -446,7 +531,11 @@ export default function AdminPage() {
             type="submit"
             disabled={
               !selectedMatchId || g1 === "" || g2 === "" || saving ||
-              (!selectedMatch?.stage.startsWith("group") && parseInt(g1) === parseInt(g2) && !penaltyWinner)
+              (!selectedMatch?.stage.startsWith("group") && parseInt(g1) === parseInt(g2) && (() => {
+                if (decisionMethod === "et") return etG1 === "" || etG2 === "" || parseInt(etG1) === parseInt(etG2);
+                if (decisionMethod === "pen") return penHome === "" || penAway === "" || parseInt(penHome) === parseInt(penAway);
+                return true; // no method selected
+              })())
             }
             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-300 text-white font-bold py-3 rounded-xl transition-colors"
           >

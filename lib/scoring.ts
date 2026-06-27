@@ -9,6 +9,15 @@ export interface Result {
   g2: number;
 }
 
+/** How a knockout draw was settled after 90 min. */
+export interface KnockoutDecision {
+  method: "et" | "pen";
+  etG1?: number;   // final score after extra time (only for "et")
+  etG2?: number;
+  penHome?: number; // penalty shootout score (only for "pen")
+  penAway?: number;
+}
+
 export type ResultLabel = "1" | "X" | "2";
 
 export interface PlayerScore {

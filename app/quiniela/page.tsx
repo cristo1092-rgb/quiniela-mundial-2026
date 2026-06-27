@@ -18,7 +18,7 @@ import {
   getJornadaMatches as getJornadaMatchesBase,
   getCurrentJornada,
 } from "@/lib/matches";
-import { Prediction, Result, calcRanking } from "@/lib/scoring";
+import { Prediction, Result, KnockoutDecision, calcRanking } from "@/lib/scoring";
 import { VoteDistribution } from "@/components/MatchCard";
 import { calcGroupStandings, calcAllStandings, calcAdvancing, groupMatchesPlayed, isGroupComplete, computeAutoKnockoutTeams } from "@/lib/standings";
 import {
@@ -29,6 +29,7 @@ import {
   deleteLocalPrediction,
   getLocalKnockoutTeams,
   getLocalKnockoutWinners,
+  getLocalKnockoutDecisions,
 } from "@/lib/localFallback";
 import MatchCard from "@/components/MatchCard";
 import GroupStandings from "@/components/GroupStandings";
@@ -45,6 +46,7 @@ export default function QuinielaPage() {
   const [results, setResults] = useState<Record<string, Result>>({});
   const [knockoutTeams, setKnockoutTeams] = useState<Record<string, string>>({});
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, "home" | "away">>({});
+  const [knockoutDecisions, setKnockoutDecisions] = useState<Record<string, KnockoutDecision>>({});
   const [activeStage, setActiveStage] = useState<Stage>("groupA");
   const [saving, setSaving] = useState<string | null>(null);
   const [allPredictions, setAllPredictions] = useState<Record<string, Record<string, Prediction>>>({});
@@ -100,10 +102,13 @@ export default function QuinielaPage() {
     const unsubKOW = onValue(ref(db, "knockoutWinners"), (snap) => {
       setKnockoutWinners({ ...getLocalKnockoutWinners(), ...(snap.val() ?? {}) });
     });
+    const unsubKOD = onValue(ref(db, "knockoutDecision"), (snap) => {
+      setKnockoutDecisions({ ...getLocalKnockoutDecisions(), ...(snap.val() ?? {}) });
+    });
     const unsubAllPreds = onValue(ref(db, "predictions"), (snap) => {
       setAllPredictions(snap.val() ?? {});
     });
-    return () => { unsubResults(); unsubKO(); unsubKOW(); unsubAllPreds(); };
+    return () => { unsubResults(); unsubKO(); unsubKOW(); unsubKOD(); unsubAllPreds(); };
   }, []);
 
   // Load this player's predictions from localStorage + Firebase
@@ -443,7 +448,8 @@ export default function QuinielaPage() {
                 <div className="mt-4 space-y-3">
                   {stageMatches.filter((m) => !results[m.id] && m.homeTeam !== "TBD").map((match) => (
                     <MatchCard key={match.id} match={match} prediction={predictions[match.id]}
-                      result={results[match.id]} onPredict={handlePredict} onDelete={handleDelete}
+                      result={results[match.id]} knockoutDecision={knockoutDecisions[match.id]}
+                      onPredict={handlePredict} onDelete={handleDelete}
                       saving={saving === match.id} votes={getVotes(match.id)} />
                   ))}
                 </div>
@@ -452,7 +458,8 @@ export default function QuinielaPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {stageMatches.map((match) => (
                   <MatchCard key={match.id} match={match} prediction={predictions[match.id]}
-                    result={results[match.id]} onPredict={handlePredict} onDelete={handleDelete}
+                    result={results[match.id]} knockoutDecision={knockoutDecisions[match.id]}
+                    onPredict={handlePredict} onDelete={handleDelete}
                     saving={saving === match.id} votes={getVotes(match.id)} />
                 ))}
               </div>
@@ -554,7 +561,8 @@ export default function QuinielaPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {dayMatches.map((match) => (
                         <MatchCard key={match.id} match={match} prediction={predictions[match.id]}
-                          result={results[match.id]} onPredict={handlePredict} onDelete={handleDelete}
+                          result={results[match.id]} knockoutDecision={knockoutDecisions[match.id]}
+                          onPredict={handlePredict} onDelete={handleDelete}
                           saving={saving === match.id} votes={getVotes(match.id)} />
                       ))}
                     </div>
