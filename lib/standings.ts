@@ -351,6 +351,57 @@ function isPositionConfirmed(
   return seen.size === 1 && !seen.has("");
 }
 
+/**
+ * Enumerates all possible outcomes of remaining group matches and returns,
+ * for each 3rd-place R32 slot (by its index in R32_MAP), the set of team
+ * names that could fill it. A set of size 1 means the slot is confirmed.
+ */
+function computeThirdPlaceVariants(
+  results: Record<string, Result>
+): Map<number, Set<string>> {
+  const variantsByIndex = new Map<number, Set<string>>();
+
+  const allGroupMatches = MATCHES.filter((m) =>
+    GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number])
+  );
+  const remaining = allGroupMatches.filter((m) => !results[m.id]);
+
+  const simulate = (simResults: Record<string, Result>) => {
+    const standings = calcAllStandings(simResults);
+    const { bestThird } = calcAdvancing(standings);
+    const assigned = new Set<string>();
+    R32_MAP.forEach((slot, i) => {
+      const src = "eligible" in slot.away
+        ? slot.away
+        : "eligible" in slot.home
+        ? slot.home
+        : null;
+      if (!src) return;
+      const eligible = (src as { eligible: Stage[] }).eligible;
+      const best = bestThird.find(
+        (t) => eligible.includes(t.group) && !assigned.has(t.team)
+      );
+      if (!best) return;
+      assigned.add(best.team);
+      if (!variantsByIndex.has(i)) variantsByIndex.set(i, new Set());
+      variantsByIndex.get(i)!.add(best.team);
+    });
+  };
+
+  if (remaining.length === 0) {
+    simulate(results);
+  } else if (remaining.length <= 8) {
+    // 3^8 = 6561 simulations max — acceptable in browser
+    for (const outcome of enumerateOutcomes(remaining.length)) {
+      const sim = { ...results };
+      remaining.forEach((m, idx) => { sim[m.id] = outcome[idx]; });
+      simulate(sim);
+    }
+  }
+
+  return variantsByIndex;
+}
+
 export function getR32Assignments(
   allStandings: Record<Stage, TeamStats[]>,
   results: Record<string, Result>
@@ -359,12 +410,17 @@ export function getR32Assignments(
   const allGroupsComplete = GROUP_STAGES.every((s) => isGroupComplete(s, results));
   const assignedThird = new Set<string>();
 
-  return R32_MAP.map(({ matchId, home, away, homeLabel, awayLabel }) => {
+  // Pre-compute which 3rd-place slots are mathematically confirmed
+  const thirdVariants = computeThirdPlaceVariants(results);
+
+  return R32_MAP.map(({ matchId, home, away, homeLabel, awayLabel }, mapIndex) => {
     // Slot is "ready" when both positions are mathematically confirmed
     const hasThird = "eligible" in home || "eligible" in away;
     let ready = false;
     if (hasThird) {
-      ready = allGroupsComplete; // 3rd-place needs all 12 groups final
+      // Confirmed only when all possible remaining outcomes give the same team
+      const variants = thirdVariants.get(mapIndex);
+      ready = variants !== undefined && variants.size === 1;
     } else {
       const hSrc = home as { group: Stage; pos: 0 | 1 };
       const aSrc = away as { group: Stage; pos: 0 | 1 };
