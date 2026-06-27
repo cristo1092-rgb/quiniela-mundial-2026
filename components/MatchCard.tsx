@@ -181,7 +181,9 @@ export default function MatchCard({ match, prediction, result, knockoutDecision,
               <span className="text-[10px] font-semibold opacity-90 mt-0.5">
                 {knockoutDecision.method === "et"
                   ? `⚡ T.E. ${knockoutDecision.etG1}–${knockoutDecision.etG2}`
-                  : `🥅 Pen. ${knockoutDecision.penHome}–${knockoutDecision.penAway}`}
+                  : knockoutDecision.etG1 != null && knockoutDecision.etG2 != null
+                    ? `⚡ T.E. ${knockoutDecision.etG1}–${knockoutDecision.etG2} · 🥅 Pen. ${knockoutDecision.penHome}–${knockoutDecision.penAway}`
+                    : `🥅 Pen. ${knockoutDecision.penHome}–${knockoutDecision.penAway}`}
               </span>
             )}
           </div>

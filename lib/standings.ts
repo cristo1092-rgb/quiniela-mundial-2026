@@ -381,9 +381,13 @@ function computeThirdPlaceVariants(
       const best = bestThird.find(
         (t) => eligible.includes(t.group) && !assigned.has(t.team)
       );
-      if (!best) return;
-      assigned.add(best.team);
+      // Always track the outcome for this slot — including "no eligible team in top 8"
       if (!variantsByIndex.has(i)) variantsByIndex.set(i, new Set());
+      if (!best) {
+        variantsByIndex.get(i)!.add(""); // sentinel: no team in this scenario
+        return;
+      }
+      assigned.add(best.team);
       variantsByIndex.get(i)!.add(best.team);
     });
   };
@@ -420,7 +424,7 @@ export function getR32Assignments(
     if (hasThird) {
       // Confirmed only when all possible remaining outcomes give the same team
       const variants = thirdVariants.get(mapIndex);
-      ready = variants !== undefined && variants.size === 1;
+      ready = variants !== undefined && variants.size === 1 && !variants.has("");
     } else {
       const hSrc = home as { group: Stage; pos: 0 | 1 };
       const aSrc = away as { group: Stage; pos: 0 | 1 };

@@ -494,29 +494,51 @@ export default function AdminPage() {
                   </div>
                 )}
 
-                {/* Penalty score */}
+                {/* Penalty: first ask ET score (informational), then penalty score */}
                 {decisionMethod === "pen" && (
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-gray-500">Resultado en la tanda de penales:</p>
-                    <div className="flex items-end gap-2">
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-400 mb-1">{homeName}</label>
-                        <input type="number" min="0" value={penHome} onChange={(e) => setPenHome(e.target.value)}
-                          className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                  <div className="space-y-4">
+                    {/* ET score — informational */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-gray-500">⚡ Marcador al final del T. Extra (empate):</p>
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-400 mb-1">{homeName}</label>
+                          <input type="number" min="0" value={etG1} onChange={(e) => setEtG1(e.target.value)}
+                            className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                        </div>
+                        <span className="text-gray-400 font-bold text-xl pb-2">–</span>
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-400 mb-1">{awayName}</label>
+                          <input type="number" min="0" value={etG2} onChange={(e) => setEtG2(e.target.value)}
+                            className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                        </div>
                       </div>
-                      <span className="text-gray-400 font-bold text-xl pb-2">–</span>
-                      <div className="flex-1">
-                        <label className="block text-xs text-gray-400 mb-1">{awayName}</label>
-                        <input type="number" min="0" value={penAway} onChange={(e) => setPenAway(e.target.value)}
-                          className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
-                      </div>
+                      <p className="text-xs text-gray-400 italic">Opcional — solo informativo, puede quedar en blanco.</p>
                     </div>
-                    {penHome !== "" && penAway !== "" && parseInt(penHome) === parseInt(penAway) && (
-                      <p className="text-xs text-red-500">Los penales no pueden terminar en empate.</p>
-                    )}
-                    {penValid && (
-                      <p className="text-xs text-green-600 font-medium">✓ Avanza: {parseInt(penHome) > parseInt(penAway) ? homeName : awayName}</p>
-                    )}
+
+                    {/* Penalty score — required */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-gray-500">🥅 Resultado en la tanda de penales:</p>
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-400 mb-1">{homeName}</label>
+                          <input type="number" min="0" value={penHome} onChange={(e) => setPenHome(e.target.value)}
+                            className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                        </div>
+                        <span className="text-gray-400 font-bold text-xl pb-2">–</span>
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-400 mb-1">{awayName}</label>
+                          <input type="number" min="0" value={penAway} onChange={(e) => setPenAway(e.target.value)}
+                            className="w-full border-2 rounded-xl px-3 py-2 text-center text-lg font-bold focus:border-amber-500 focus:outline-none" placeholder="0" />
+                        </div>
+                      </div>
+                      {penHome !== "" && penAway !== "" && parseInt(penHome) === parseInt(penAway) && (
+                        <p className="text-xs text-red-500">Los penales no pueden terminar en empate.</p>
+                      )}
+                      {penHome !== "" && penAway !== "" && parseInt(penHome) !== parseInt(penAway) && (
+                        <p className="text-xs text-green-600 font-medium">✓ Avanza: {parseInt(penHome) > parseInt(penAway) ? homeName : awayName}</p>
+                      )}
+                    </div>
                   </div>
                 )}
 
