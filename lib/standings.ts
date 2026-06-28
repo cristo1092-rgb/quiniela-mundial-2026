@@ -439,8 +439,10 @@ export function getR32Assignments(
     } else {
       const hSrc = home as { group: Stage; pos: 0 | 1 };
       const aSrc = away as { group: Stage; pos: 0 | 1 };
-      ready = isPositionConfirmed(hSrc.group, hSrc.pos, results) &&
-              isPositionConfirmed(aSrc.group, aSrc.pos, results);
+      // Only mark ready once both groups have fully finished playing.
+      // isPositionConfirmed opens too early (e.g. Colombia's slot shows
+      // confirmed while they're still mid-game against Portugal).
+      ready = isGroupComplete(hSrc.group, results) && isGroupComplete(aSrc.group, results);
     }
 
     const h = resolvePositionTeam(home as { group: Stage; pos: 0 | 1 }, allStandings);
