@@ -268,21 +268,10 @@ const R32_MAP: Array<{ matchId: string; home: Src; away: Src; homeLabel: string;
   { matchId: "R32_16", home: { group: "groupK", pos: 0 }, away: { eligible: ["groupD","groupE","groupI","groupJ","groupL"] }, homeLabel: "1K", awayLabel: "3DEIJL" },
 ];
 
-function resolveTeam(
-  src: Src,
+function resolvePositionTeam(
+  src: { group: Stage; pos: 0 | 1 },
   allStandings: Record<Stage, TeamStats[]>,
-  bestThird: TeamStats[],
-  annexCMap: Record<string, Stage> | null,
-  matchId: string,
 ): { name: string; flag: string } | null {
-  if ("eligible" in src) {
-    // 3rd-place slots: only show a team when Annex C gives a definitive answer
-    // (i.e., all groups complete and combination is in the table).
-    if (!annexCMap) return null;
-    const targetGroup = annexCMap[matchId] as Stage | undefined;
-    const team = targetGroup ? bestThird.find(t => t.group === targetGroup) : null;
-    return team ? { name: team.team, flag: team.flag } : null;
-  }
   const team = allStandings[src.group]?.[src.pos];
   return team ? { name: team.team, flag: team.flag } : null;
 }
@@ -411,12 +400,18 @@ function computeThirdPlaceVariants(
     });
   };
 
-  // Only confirm 3rd-place slots when ALL group results are uploaded.
-  // Enumeration of partial results produces false positives because J/K/L
-  // 3rd-place teams can displace eligible teams from the top-8 ranking,
-  // and that interaction only stabilises once the full picture is known.
+  // Enumerate possible outcomes of remaining group matches.
+  // simulate() uses Annex C lookup (not best-ranked-first), so results are
+  // accurate regardless of how many groups are still pending.
+  // Cap at 10 remaining matches (3^10 = 59 049) to keep the browser fast.
   if (remaining.length === 0) {
     simulate(results);
+  } else if (remaining.length <= 10) {
+    for (const outcome of enumerateOutcomes(remaining.length)) {
+      const sim = { ...results };
+      remaining.forEach((m, i) => { sim[m.id] = outcome[i]; });
+      simulate(sim);
+    }
   }
 
   return variantsByIndex;
@@ -426,15 +421,19 @@ export function getR32Assignments(
   allStandings: Record<Stage, TeamStats[]>,
   results: Record<string, Result>
 ): KnockoutSlot[] {
-  const { bestThird } = calcAdvancing(allStandings);
+  const { thirdPlace, bestThird } = calcAdvancing(allStandings);
   const allGroupsComplete = GROUP_STAGES.every((s) => isGroupComplete(s, results));
   const annexCMap = allGroupsComplete ? lookupAnnexC(bestThird) : null;
   const thirdVariants = computeThirdPlaceVariants(results);
+  // Lookup by team name → stats (used to get the flag when resolved via variants)
+  const thirdByName = new Map(thirdPlace.map((t) => [t.team, t]));
 
   return R32_MAP.map(({ matchId, home, away, homeLabel, awayLabel }, mapIndex) => {
-    const hasThird = "eligible" in home || "eligible" in away;
+    // All 3rd-place slots are in `away`; `home` is always a 1st/2nd place position.
+    const isThirdSlot = "eligible" in away;
+
     let ready = false;
-    if (hasThird) {
+    if (isThirdSlot) {
       const variants = thirdVariants.get(mapIndex);
       ready = variants !== undefined && variants.size === 1 && !variants.has("");
     } else {
@@ -444,8 +443,25 @@ export function getR32Assignments(
               isPositionConfirmed(aSrc.group, aSrc.pos, results);
     }
 
-    const h = resolveTeam(home, allStandings, bestThird, annexCMap, matchId);
-    const a = resolveTeam(away, allStandings, bestThird, annexCMap, matchId);
+    const h = resolvePositionTeam(home as { group: Stage; pos: 0 | 1 }, allStandings);
+
+    let a: { name: string; flag: string } | null = null;
+    if (isThirdSlot) {
+      const variants = thirdVariants.get(mapIndex);
+      if (variants?.size === 1 && !variants.has("")) {
+        // Enumeration confirmed a single team for this slot
+        const teamName = [...variants][0];
+        const t = thirdByName.get(teamName);
+        if (t) a = { name: t.team, flag: t.flag };
+      } else if (annexCMap) {
+        // Fallback: use Annex C directly (only available when allGroupsComplete)
+        const tg = annexCMap[matchId] as Stage | undefined;
+        const t = tg ? bestThird.find((x) => x.group === tg) : null;
+        if (t) a = { name: t.team, flag: t.flag };
+      }
+    } else {
+      a = resolvePositionTeam(away as { group: Stage; pos: 0 | 1 }, allStandings);
+    }
 
     return {
       matchId,
