@@ -173,7 +173,7 @@ export default function AdminPage() {
       } catch { /* localStorage already saved */ }
     }
     const advancesLabel = decidedWinner
-      ? ` (avanza ${knockoutDecision?.method === "et" ? "T.E." : "pen."}: ${decidedWinner === "home" ? selectedMatch?.homeTeam : selectedMatch?.awayTeam})`
+      ? ` (avanza ${knockoutDecision?.method === "et" ? "T.E." : "pen."}: ${decidedWinner === "home" ? displayHome : displayAway})`
       : "";
     setSavedMsg(`✓ Resultado guardado: ${selectedMatchId} ${g1}–${g2}${advancesLabel}`);
     setG1(""); setG2(""); setSelectedMatchId("");
@@ -308,6 +308,13 @@ export default function AdminPage() {
   }
 
   const selectedMatch: Match | undefined = MATCHES.find((m) => m.id === selectedMatchId);
+  const isSelectedKnockout = !!selectedMatch && !selectedMatch.stage.startsWith("group");
+  const displayHome = selectedMatch
+    ? (isSelectedKnockout ? resolvedKOName(selectedMatch.id, "home") : selectedMatch.homeTeam)
+    : "Equipo 1";
+  const displayAway = selectedMatch
+    ? (isSelectedKnockout ? resolvedKOName(selectedMatch.id, "away") : selectedMatch.awayTeam)
+    : "Equipo 2";
   const groupMatches = MATCHES.filter((m) => m.stage.startsWith("group"));
   const knockoutMatches = MATCHES.filter((m) => !m.stage.startsWith("group"));
   const savedResults = Object.entries(results);
@@ -393,9 +400,9 @@ export default function AdminPage() {
 
           {selectedMatch && (
             <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-              {selectedMatch.homeFlag} <strong>{selectedMatch.homeTeam}</strong>
+              {selectedMatch.homeFlag} <strong>{displayHome}</strong>
               {" vs "}
-              <strong>{selectedMatch.awayTeam}</strong> {selectedMatch.awayFlag}
+              <strong>{displayAway}</strong> {selectedMatch.awayFlag}
               <span className="ml-2 text-gray-400">· {selectedMatch.date}</span>
             </div>
           )}
@@ -403,7 +410,7 @@ export default function AdminPage() {
           <div className="flex gap-4 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Goles {selectedMatch?.homeTeam ?? "Equipo 1"}
+                Goles {displayHome}
               </label>
               <input
                 type="number"
@@ -418,7 +425,7 @@ export default function AdminPage() {
             <div className="text-2xl font-bold text-gray-400 pb-2">–</div>
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Goles {selectedMatch?.awayTeam ?? "Equipo 2"}
+                Goles {displayAway}
               </label>
               <input
                 type="number"
