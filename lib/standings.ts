@@ -206,6 +206,33 @@ export interface KnockoutSlot {
 // eligible = best 3rd-place team from any of these groups (top-8 only when all done)
 type Src = { group: Stage; pos: 0 | 1 } | { eligible: Stage[] };
 
+// ── Annex C lookup table (FIFA 2026 World Cup regulations) ─────────────────
+// Maps sorted advancing-group letters → 3rd-place slot assignments.
+// Slot order (alphabetical by home group): R32_7(A), R32_13(B), R32_10(D),
+//   R32_3(E), R32_9(G), R32_6(I), R32_16(K), R32_8(L)
+const ANNEX_C_SLOT_IDS = ["R32_7","R32_13","R32_10","R32_3","R32_9","R32_6","R32_16","R32_8"] as const;
+const ANNEX_C: Record<string, readonly string[]> = {
+  "BDEFIJKL": ["E","J","B","D","I","F","L","K"],
+  "BDEFGIKL": ["E","G","B","D","I","F","L","K"],
+  "BDEFGIJL": ["E","G","B","D","J","F","L","I"],
+  "BDEFGIJK": ["E","G","B","D","J","F","I","K"],
+  "ABDEFGIL": ["E","G","B","D","A","F","L","I"],
+  "ABDEFGIK": ["E","G","B","D","A","F","I","K"],
+  "ABDEFGIJ": ["E","G","B","D","A","F","I","J"],
+  "ABCDEFGI": ["C","G","B","D","A","F","E","I"],
+};
+
+/** Looks up the Annex C slot→group mapping for the actual top-8 advancing 3rd-place teams. */
+function lookupAnnexC(bestThird: TeamStats[]): Record<string, Stage> | null {
+  if (bestThird.length !== 8) return null;
+  const key = bestThird.map(t => t.group.slice(-1).toUpperCase()).sort().join("");
+  const groups = ANNEX_C[key];
+  if (!groups) return null;
+  return Object.fromEntries(
+    ANNEX_C_SLOT_IDS.map((matchId, i) => [matchId, `group${groups[i]}` as Stage])
+  );
+}
+
 const R32_MAP: Array<{ matchId: string; home: Src; away: Src; homeLabel: string; awayLabel: string }> = [
   // M73 (Jun 28): 2A vs 2B
   { matchId: "R32_1",  home: { group: "groupA", pos: 1 }, away: { group: "groupB", pos: 1 }, homeLabel: "2A",     awayLabel: "2B" },
@@ -244,21 +271,17 @@ const R32_MAP: Array<{ matchId: string; home: Src; away: Src; homeLabel: string;
 function resolveTeam(
   src: Src,
   allStandings: Record<Stage, TeamStats[]>,
-  thirdPlace: TeamStats[],    // all 12 3rd-place teams, ranked
-  bestThird: TeamStats[],     // top 8 of the above
-  assignedThird: Set<string>,
-  allGroupsComplete: boolean
+  bestThird: TeamStats[],
+  annexCMap: Record<string, Stage> | null,
+  matchId: string,
 ): { name: string; flag: string } | null {
   if ("eligible" in src) {
-    // When all groups done → only consider confirmed top-8 teams from eligible groups.
-    // Provisional → any 3rd-place team from eligible groups that has played.
-    const pool = allGroupsComplete ? bestThird : thirdPlace;
-    const best = pool.find(
-      t => (src.eligible as Stage[]).includes(t.group) && t.played > 0 && !assignedThird.has(t.team)
-    );
-    if (!best) return null;
-    assignedThird.add(best.team);
-    return { name: best.team, flag: best.flag };
+    // 3rd-place slots: only show a team when Annex C gives a definitive answer
+    // (i.e., all groups complete and combination is in the table).
+    if (!annexCMap) return null;
+    const targetGroup = annexCMap[matchId] as Stage | undefined;
+    const team = targetGroup ? bestThird.find(t => t.group === targetGroup) : null;
+    return team ? { name: team.team, flag: team.flag } : null;
   }
   const team = allStandings[src.group]?.[src.pos];
   return team ? { name: team.team, flag: team.flag } : null;
@@ -369,7 +392,7 @@ function computeThirdPlaceVariants(
   const simulate = (simResults: Record<string, Result>) => {
     const standings = calcAllStandings(simResults);
     const { bestThird } = calcAdvancing(standings);
-    const assigned = new Set<string>();
+    const annexCMap = lookupAnnexC(bestThird);
     R32_MAP.forEach((slot, i) => {
       const src = "eligible" in slot.away
         ? slot.away
@@ -377,18 +400,14 @@ function computeThirdPlaceVariants(
         ? slot.home
         : null;
       if (!src) return;
-      const eligible = (src as { eligible: Stage[] }).eligible;
-      const best = bestThird.find(
-        (t) => eligible.includes(t.group) && !assigned.has(t.team)
-      );
-      // Always track the outcome for this slot — including "no eligible team in top 8"
       if (!variantsByIndex.has(i)) variantsByIndex.set(i, new Set());
-      if (!best) {
-        variantsByIndex.get(i)!.add(""); // sentinel: no team in this scenario
-        return;
+      if (annexCMap) {
+        const targetGroup = annexCMap[slot.matchId] as Stage | undefined;
+        const team = targetGroup ? bestThird.find(t => t.group === targetGroup) : null;
+        variantsByIndex.get(i)!.add(team?.team ?? "");
+      } else {
+        variantsByIndex.get(i)!.add(""); // unknown combination → sentinel
       }
-      assigned.add(best.team);
-      variantsByIndex.get(i)!.add(best.team);
     });
   };
 
@@ -407,19 +426,15 @@ export function getR32Assignments(
   allStandings: Record<Stage, TeamStats[]>,
   results: Record<string, Result>
 ): KnockoutSlot[] {
-  const { thirdPlace, bestThird } = calcAdvancing(allStandings);
+  const { bestThird } = calcAdvancing(allStandings);
   const allGroupsComplete = GROUP_STAGES.every((s) => isGroupComplete(s, results));
-  const assignedThird = new Set<string>();
-
-  // Pre-compute which 3rd-place slots are mathematically confirmed
+  const annexCMap = allGroupsComplete ? lookupAnnexC(bestThird) : null;
   const thirdVariants = computeThirdPlaceVariants(results);
 
   return R32_MAP.map(({ matchId, home, away, homeLabel, awayLabel }, mapIndex) => {
-    // Slot is "ready" when both positions are mathematically confirmed
     const hasThird = "eligible" in home || "eligible" in away;
     let ready = false;
     if (hasThird) {
-      // Confirmed only when all possible remaining outcomes give the same team
       const variants = thirdVariants.get(mapIndex);
       ready = variants !== undefined && variants.size === 1 && !variants.has("");
     } else {
@@ -429,8 +444,8 @@ export function getR32Assignments(
               isPositionConfirmed(aSrc.group, aSrc.pos, results);
     }
 
-    const h = resolveTeam(home, allStandings, thirdPlace, bestThird, assignedThird, allGroupsComplete);
-    const a = resolveTeam(away, allStandings, thirdPlace, bestThird, assignedThird, allGroupsComplete);
+    const h = resolveTeam(home, allStandings, bestThird, annexCMap, matchId);
+    const a = resolveTeam(away, allStandings, bestThird, annexCMap, matchId);
 
     return {
       matchId,
