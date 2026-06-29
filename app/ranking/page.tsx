@@ -1,10 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 import { Prediction, Result, calcRanking, calcMatchPoints, PlayerScore } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
 import { MATCHES, getMatchById, matchJornada, getCurrentJornada, Jornada } from "@/lib/matches";
+import { computeAutoKnockoutTeams } from "@/lib/standings";
 import RankingTable from "@/components/RankingTable";
 import PullToRefresh from "@/components/PullToRefresh";
 
@@ -55,6 +56,8 @@ export default function RankingPage() {
   }, []);
 
   const [view, setView] = useState<"total" | 1 | 2 | 3>("total");
+
+  const knockoutTeams = useMemo(() => computeAutoKnockoutTeams(results).teams, [results]);
 
   // Filter results to a single jornada
   function resultsOfJornada(j: Jornada): Record<string, Result> {
@@ -210,7 +213,7 @@ export default function RankingPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <RankingTable scores={scores} currentPlayer={currentPlayer} allPredictions={predictions} results={viewResults} avatars={avatars} movement={movement} />
+        <RankingTable scores={scores} currentPlayer={currentPlayer} allPredictions={predictions} results={viewResults} avatars={avatars} movement={movement} knockoutTeams={knockoutTeams} />
       </div>
 
       {scores.length === 0 && resultsCount === 0 && (

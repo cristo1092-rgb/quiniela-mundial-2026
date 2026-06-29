@@ -11,9 +11,11 @@ interface Props {
   avatars?: Record<string, string>;
   /** Positions gained (+) or lost (−) vs. before the current jornada */
   movement?: Record<string, number>;
+  /** Resolved knockout team names keyed by `${matchId}_home` / `${matchId}_away` */
+  knockoutTeams?: Record<string, string>;
 }
 
-export default function RankingTable({ scores, currentPlayer, allPredictions, results, avatars, movement }: Props) {
+export default function RankingTable({ scores, currentPlayer, allPredictions, results, avatars, movement, knockoutTeams }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (scores.length === 0) {
@@ -128,7 +130,7 @@ export default function RankingTable({ scores, currentPlayer, allPredictions, re
                                           "bg-red-50 border-red-100"
                             }`}>
                               <span className="font-medium text-gray-700 truncate max-w-[160px]">
-                                {m.homeTeam} — {m.awayTeam}
+                                {knockoutTeams?.[`${m.id}_home`] ?? m.homeTeam} — {knockoutTeams?.[`${m.id}_away`] ?? m.awayTeam}
                               </span>
                               <div className="flex items-center gap-2 shrink-0 ml-2">
                                 <span className="text-gray-500">
