@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 import { Prediction, Result, calcRanking, calcMatchPoints, PlayerScore } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
-import { MATCHES, getMatchById, matchJornada, getCurrentJornada, getJornadaMatches, JORNADA_LABELS, Jornada } from "@/lib/matches";
+import { getCurrentJornada, getJornadaMatches, JORNADA_LABELS, Jornada } from "@/lib/matches";
 import { computeAutoKnockoutTeams } from "@/lib/standings";
 import RankingTable from "@/components/RankingTable";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -59,14 +59,9 @@ export default function RankingPage() {
 
   const knockoutTeams = useMemo(() => computeAutoKnockoutTeams(results).teams, [results]);
 
-  // Filter results to a single jornada
   function resultsOfJornada(j: Jornada): Record<string, Result> {
-    const filtered: Record<string, Result> = {};
-    for (const [matchId, r] of Object.entries(results)) {
-      const m = getMatchById(matchId);
-      if (m && matchJornada(m) === j) filtered[matchId] = r;
-    }
-    return filtered;
+    const ids = new Set(getJornadaMatches(j).map((m) => m.id));
+    return Object.fromEntries(Object.entries(results).filter(([id]) => ids.has(id)));
   }
 
   const viewResults = view === "total" ? results : resultsOfJornada(view);

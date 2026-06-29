@@ -340,30 +340,6 @@ function enumerateOutcomes(n: number): Array<Array<{ g1: number; g2: number }>> 
 }
 
 /**
- * Returns true only when every possible outcome of the remaining group matches
- * produces the same team in `pos` (0 = 1st, 1 = 2nd).
- * This lets knockout slots open early without waiting for all 6 group games.
- */
-function isPositionConfirmed(
-  stage: Stage,
-  pos: 0 | 1,
-  results: Record<string, Result>
-): boolean {
-  const groupMatches = MATCHES.filter((m) => m.stage === stage);
-  const remaining = groupMatches.filter((m) => !results[m.id]);
-  if (remaining.length === 0) return true;
-  const seen = new Set<string>();
-  for (const outcome of enumerateOutcomes(remaining.length)) {
-    const sim = { ...results };
-    remaining.forEach((m, i) => { sim[m.id] = outcome[i]; });
-    const team = calcGroupStandings(stage, sim)[pos]?.team ?? "";
-    seen.add(team);
-    if (seen.size > 1) return false; // ambiguous → not confirmed yet
-  }
-  return seen.size === 1 && !seen.has("");
-}
-
-/**
  * Enumerates all possible outcomes of remaining group matches and returns,
  * for each 3rd-place R32 slot (by its index in R32_MAP), the set of team
  * names that could fill it. A set of size 1 means the slot is confirmed.
@@ -421,11 +397,8 @@ export function getR32Assignments(
   allStandings: Record<Stage, TeamStats[]>,
   results: Record<string, Result>
 ): KnockoutSlot[] {
-  const { thirdPlace, bestThird } = calcAdvancing(allStandings);
-  const allGroupsComplete = GROUP_STAGES.every((s) => isGroupComplete(s, results));
-  const annexCMap = allGroupsComplete ? lookupAnnexC(bestThird) : null;
+  const { thirdPlace } = calcAdvancing(allStandings);
   const thirdVariants = computeThirdPlaceVariants(results);
-  // Lookup by team name → stats (used to get the flag when resolved via variants)
   const thirdByName = new Map(thirdPlace.map((t) => [t.team, t]));
 
   return R32_MAP.map(({ matchId, home, away, homeLabel, awayLabel }, mapIndex) => {
@@ -451,14 +424,8 @@ export function getR32Assignments(
     if (isThirdSlot) {
       const variants = thirdVariants.get(mapIndex);
       if (variants?.size === 1 && !variants.has("")) {
-        // Enumeration confirmed a single team for this slot
         const teamName = [...variants][0];
         const t = thirdByName.get(teamName);
-        if (t) a = { name: t.team, flag: t.flag };
-      } else if (annexCMap) {
-        // Fallback: use Annex C directly (only available when allGroupsComplete)
-        const tg = annexCMap[matchId] as Stage | undefined;
-        const t = tg ? bestThird.find((x) => x.group === tg) : null;
         if (t) a = { name: t.team, flag: t.flag };
       }
     } else {
