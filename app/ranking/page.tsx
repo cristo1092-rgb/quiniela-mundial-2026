@@ -4,7 +4,7 @@ import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
 import { Prediction, Result, calcRanking, calcMatchPoints, PlayerScore } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults } from "@/lib/localFallback";
-import { MATCHES, getMatchById, matchJornada, getCurrentJornada, Jornada } from "@/lib/matches";
+import { MATCHES, getMatchById, matchJornada, getCurrentJornada, getJornadaMatches, JORNADA_LABELS, Jornada } from "@/lib/matches";
 import { computeAutoKnockoutTeams } from "@/lib/standings";
 import RankingTable from "@/components/RankingTable";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -55,7 +55,7 @@ export default function RankingPage() {
     return () => { unsub(); unsubAv(); window.removeEventListener("storage", storageHandler); };
   }, []);
 
-  const [view, setView] = useState<"total" | 1 | 2 | 3>("total");
+  const [view, setView] = useState<"total" | Jornada>("total");
 
   const knockoutTeams = useMemo(() => computeAutoKnockoutTeams(results).teams, [results]);
 
@@ -94,30 +94,22 @@ export default function RankingPage() {
     return deltas;
   })();
 
-  // Compute MVP: player with most points in the most recent jornada that has results
-  const JORNADA_LABELS: Record<1 | 2 | 3, string> = { 1: "Jornada 1", 2: "Jornada 2", 3: "Jornada 3" };
-
-  const mvp = (() => {
-    // Find most recent jornada with at least one result
-    for (const j of [3, 2, 1] as const) {
-      const jMatchIds = MATCHES.filter((m) => matchJornada(m) === j).map((m) => m.id);
-      const hasResult = jMatchIds.some((id) => results[id]);
-      if (!hasResult) continue;
-      // Compute points per player in this jornada
-      let best: { player: string; points: number } | null = null;
-      for (const [player, preds] of Object.entries(predictions)) {
-        let pts = 0;
-        for (const id of jMatchIds) {
-          const pred = preds[id];
-          const result = results[id];
-          if (pred && result) pts += calcMatchPoints(pred, result);
-        }
-        if (!best || pts > best.points) best = { player, points: pts };
+  // Compute MVP per jornada (all phases with at least one result)
+  const mvps = (["elim", 3, 2, 1] as const).flatMap((j) => {
+    const jMatchIds = getJornadaMatches(j).map((m) => m.id);
+    if (!jMatchIds.some((id) => results[id])) return [];
+    let best: { player: string; points: number } | null = null;
+    for (const [player, preds] of Object.entries(predictions)) {
+      let pts = 0;
+      for (const id of jMatchIds) {
+        const pred = preds[id];
+        const result = results[id];
+        if (pred && result) pts += calcMatchPoints(pred, result);
       }
-      if (best && best.points > 0) return { ...best, jornada: JORNADA_LABELS[j] };
+      if (!best || pts > best.points) best = { player, points: pts };
     }
-    return null;
-  })();
+    return best && best.points > 0 ? [{ ...best, jornada: j, label: JORNADA_LABELS[j] }] : [];
+  });
 
   return (
     <PullToRefresh onRefresh={() => new Promise(r => setTimeout(r, 600))}>
@@ -161,22 +153,26 @@ export default function RankingPage() {
         </div>
       </div>
 
-      {/* MVP card */}
-      {mvp && (
-        <div className="rounded-2xl overflow-hidden mb-6 shadow-md">
-          <div className="h-1 flex">
-            <div className="flex-1 bg-[#facc15]" />
-            <div className="flex-1 bg-[#f97316]" />
-            <div className="flex-1 bg-[#e91e8c]" />
-          </div>
-          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-yellow-900/70">⭐ MVP — {mvp.jornada}</p>
-              <p className="text-2xl font-black text-white mt-0.5">{mvp.player}</p>
-              <p className="text-sm text-yellow-900/80 font-semibold">{mvp.points} puntos en la jornada</p>
+      {/* MVP cards — one per jornada with results */}
+      {mvps.length > 0 && (
+        <div className={`grid gap-3 mb-6 ${mvps.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+          {mvps.map((m) => (
+            <div key={m.jornada} className="rounded-2xl overflow-hidden shadow-md">
+              <div className="h-1 flex">
+                <div className="flex-1 bg-[#facc15]" />
+                <div className="flex-1 bg-[#f97316]" />
+                <div className="flex-1 bg-[#e91e8c]" />
+              </div>
+              <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-3 flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-yellow-900/70 truncate">⭐ MVP — {m.label}</p>
+                  <p className="text-lg font-black text-white mt-0.5 truncate">{m.player}</p>
+                  <p className="text-xs text-yellow-900/80 font-semibold">{m.points} pts</p>
+                </div>
+                <span className="text-3xl select-none ml-2 flex-shrink-0">🏆</span>
+              </div>
             </div>
-            <span className="text-5xl select-none">🏆</span>
-          </div>
+          ))}
         </div>
       )}
 
@@ -192,9 +188,9 @@ export default function RankingPage() {
         </div>
       </div>
 
-      {/* View selector: total vs por jornada */}
-      <div className="flex items-center gap-2 mb-4">
-        {([["total", "Total"], [1, "J1"], [2, "J2"], [3, "J3"]] as const).map(([v, label]) => (
+      {/* View selector: total vs por jornada / eliminatorias */}
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
+        {([["total", "Total"], [1, "J1"], [2, "J2"], [3, "J3"], ["elim", "Elim"]] as const).map(([v, label]) => (
           <button
             key={String(v)}
             onClick={() => setView(v)}
@@ -208,7 +204,9 @@ export default function RankingPage() {
           </button>
         ))}
         {view !== "total" && (
-          <span className="text-xs text-gray-400 ml-1">Solo puntos de la Jornada {view}</span>
+          <span className="text-xs text-gray-400 ml-1">
+            Solo puntos de {view === "elim" ? "Eliminatorias" : `Jornada ${view}`}
+          </span>
         )}
       </div>
 
