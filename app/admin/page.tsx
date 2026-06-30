@@ -657,15 +657,18 @@ export default function AdminPage() {
             {savedResults.map(([matchId, result]) => {
               const match = MATCHES.find((m) => m.id === matchId);
               if (!match) return null;
+              const isKO = !match.stage.startsWith("group");
+              const homeName = isKO ? resolvedKOName(matchId, "home") : match.homeTeam;
+              const awayName = isKO ? resolvedKOName(matchId, "away") : match.awayTeam;
               return (
                 <div key={matchId} className="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-2.5">
                   <div className="text-sm">
                     <span className="font-mono text-gray-400 text-xs mr-2">{matchId}</span>
-                    <span className="font-semibold">{match.homeTeam}</span>
+                    <span className="font-semibold">{homeName}</span>
                     <span className="mx-2 font-bold font-mono bg-gray-800 text-white rounded px-2 py-0.5 text-xs">
                       {result.g1} – {result.g2}
                     </span>
-                    <span className="font-semibold">{match.awayTeam}</span>
+                    <span className="font-semibold">{awayName}</span>
                   </div>
                   <button
                     onClick={() => handleDeleteResult(matchId)}
