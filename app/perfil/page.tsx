@@ -40,15 +40,6 @@ function getJornadaMatchIds(j: 1 | 2 | 3 | "elim"): string[] {
   ).map((m) => m.id);
 }
 
-function StatCard({ value, label, color }: { value: string | number; label: string; color: string }) {
-  return (
-    <div className={`bg-white rounded-xl border-2 ${color} p-4 text-center`}>
-      <div className="text-3xl font-black text-gray-900">{value}</div>
-      <div className="text-xs text-gray-500 mt-1 font-medium">{label}</div>
-    </div>
-  );
-}
-
 export default function PerfilPage() {
   const router = useRouter();
   const [playerName, setPlayerName] = useState<string | null>(null);
@@ -58,14 +49,16 @@ export default function PerfilPage() {
   const [avatar, setAvatar] = useState<string>("⚽");
   const [showPicker, setShowPicker] = useState(false);
   const [savedAvatar, setSavedAvatar] = useState(false);
+  // P1: badges persisted in Firebase
+  const [savedBadges, setSavedBadges] = useState<Record<string, true>>({});
   const pickerRef = useRef<HTMLDivElement>(null);
+  const writtenBadgesRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const stored = localStorage.getItem("quinielaPlayer");
     const authed = localStorage.getItem("quinielaPlayerAuth");
     if (stored && authed === "true") {
       setPlayerName(stored);
-      // Load avatar from localStorage first
       const storedAvatar = localStorage.getItem(`quinielaAvatar_${stored}`);
       if (storedAvatar) setAvatar(storedAvatar);
     } else router.replace("/entrar");
@@ -74,32 +67,31 @@ export default function PerfilPage() {
 
   useEffect(() => {
     if (!isFirebaseConfigured()) { setResults(getLocalResults()); return; }
-    const unsubR = onValue(ref(db, "results"), (snap) => {
-      setResults(snap.val() ?? {});
-    });
-    const unsubP = onValue(ref(db, "predictions"), (snap) => {
-      setPredictions(snap.val() ?? {});
-    });
+    const unsubR = onValue(ref(db, "results"), (snap) => { setResults(snap.val() ?? {}); });
+    const unsubP = onValue(ref(db, "predictions"), (snap) => { setPredictions(snap.val() ?? {}); });
     return () => { unsubR(); unsubP(); };
   }, []);
 
-  // Load avatar from Firebase when playerName is set
   useEffect(() => {
     if (!playerName || !isFirebaseConfigured()) return;
-    const unsub = onValue(ref(db, `avatars/${playerName}`), (snap) => {
+    return onValue(ref(db, `avatars/${playerName}`), (snap) => {
       const val = snap.val();
       if (val) { setAvatar(val); localStorage.setItem(`quinielaAvatar_${playerName}`, val); }
     });
-    return unsub;
   }, [playerName]);
 
-  // Close picker when tapping outside
+  // P1: load persisted badges
+  useEffect(() => {
+    if (!playerName || !isFirebaseConfigured()) return;
+    return onValue(ref(db, `badges/${playerName}`), (snap) => {
+      setSavedBadges(snap.val() ?? {});
+    });
+  }, [playerName]);
+
   useEffect(() => {
     if (!showPicker) return;
     function handleOutside(e: MouseEvent | TouchEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setShowPicker(false);
-      }
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setShowPicker(false);
     }
     document.addEventListener("mousedown", handleOutside);
     document.addEventListener("touchstart", handleOutside);
@@ -117,16 +109,15 @@ export default function PerfilPage() {
     );
   }
 
-  // My predictions
+  // ── Computations ─────────────────────────────────────────────────────────────
+
   const myPreds = predictions[playerName] ?? {};
   const allScores = calcRanking(predictions, results);
   const myRankEntry = allScores.find((s) => s.name === playerName);
   const myRank = myRankEntry ? allScores.indexOf(myRankEntry) + 1 : null;
 
-  // Detailed stats
   let exact = 0, correct = 0, wrong = 0, predicted = 0;
   const scoreCounts: Record<string, number> = {};
-
   for (const [matchId, pred] of Object.entries(myPreds)) {
     const result = results[matchId];
     predicted++;
@@ -142,7 +133,6 @@ export default function PerfilPage() {
   const favScore = Object.entries(scoreCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
   const resultsCount = Object.keys(results).length;
 
-  // Predicción más loca (más goles totales)
   const craziestEntry = Object.entries(myPreds)
     .map(([id, p]) => ({ id, p, total: p.g1 + p.g2 }))
     .sort((a, b) => b.total - a.total)[0];
@@ -150,12 +140,10 @@ export default function PerfilPage() {
     ? MATCHES.find((m) => m.id === craziestEntry.id)
     : null;
 
-  // Rival directo
   const myRankIdx = myRank != null ? myRank - 1 : -1;
   const rivalAbove = myRankIdx > 0 ? allScores[myRankIdx - 1] : null;
   const rivalBelow = myRankIdx >= 0 && myRankIdx < allScores.length - 1 ? allScores[myRankIdx + 1] : null;
 
-  // Points per jornada
   const jornadaPoints = ([1, 2, 3, "elim"] as const).map((j) => {
     const ids = getJornadaMatchIds(j);
     let pts = 0, played = 0;
@@ -167,7 +155,6 @@ export default function PerfilPage() {
     return { label: JORNADA_LABELS[j], pts, played, total: ids.length, predicted: ids.filter((id) => myPreds[id]).length };
   });
 
-  // Insignias — pocas pero difíciles de ganar
   const badges = [
     {
       id: "sniper",
@@ -203,7 +190,7 @@ export default function PerfilPage() {
       id: "goat",
       emoji: "🐐",
       label: "El GOAT",
-      desc: "Lideras el ranking",
+      desc: "Lideraste el ranking",
       req: "Llega al primer lugar",
       earned: myRank === 1,
     },
@@ -211,20 +198,30 @@ export default function PerfilPage() {
       id: "champ",
       emoji: "🏆",
       label: "Campeón",
-      desc: "Ganaste el torneo (primer lugar al final)",
+      desc: "Ganaste el torneo",
       req: "Gana el torneo completo",
-      earned: false, // se activa manualmente al final
+      earned: false,
     },
   ];
+
+  // P1: auto-save newly earned badges to Firebase (fire-and-forget)
+  for (const badge of badges) {
+    if (badge.earned && !savedBadges[badge.id] && !writtenBadgesRef.current.has(badge.id) && isFirebaseConfigured()) {
+      writtenBadgesRef.current.add(badge.id);
+      void set(ref(db, `badges/${playerName}/${badge.id}`), true);
+    }
+  }
+
+  // P3: separate earned vs locked using persisted + current state
+  const earnedBadges = badges.filter((b) => b.earned || !!savedBadges[b.id]);
+  const lockedBadges = badges.filter((b) => !b.earned && !savedBadges[b.id]);
 
   async function handleSelectAvatar(emoji: string) {
     setAvatar(emoji);
     setShowPicker(false);
     if (playerName) {
       localStorage.setItem(`quinielaAvatar_${playerName}`, emoji);
-      if (isFirebaseConfigured()) {
-        await set(ref(db, `avatars/${playerName}`), emoji);
-      }
+      if (isFirebaseConfigured()) await set(ref(db, `avatars/${playerName}`), emoji);
     }
     setSavedAvatar(true);
     setTimeout(() => setSavedAvatar(false), 1500);
@@ -238,7 +235,8 @@ export default function PerfilPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
+
+      {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="rounded-2xl shadow-lg">
         <div className="h-1.5 flex rounded-t-2xl overflow-hidden">
           <div className="flex-1 bg-[#e91e8c]" />
@@ -262,7 +260,7 @@ export default function PerfilPage() {
                 </div>
               )}
             </div>
-            {/* Avatar selector — popover */}
+            {/* Avatar selector */}
             <div ref={pickerRef} className="relative flex-shrink-0">
               <button
                 onClick={() => setShowPicker((v) => !v)}
@@ -274,8 +272,6 @@ export default function PerfilPage() {
               <span className="block text-center text-[10px] text-green-300 font-medium mt-1">
                 {savedAvatar ? "✓ Guardado" : "Cambiar"}
               </span>
-
-              {/* Popover flotante — abre hacia abajo */}
               {showPicker && (
                 <div className="absolute top-full right-0 mt-2 bg-gray-900 rounded-2xl shadow-2xl p-3 z-50" style={{ width: "272px" }}>
                   <p className="text-gray-400 text-xs font-semibold mb-2 uppercase tracking-wide">Elige tu avatar</p>
@@ -285,9 +281,7 @@ export default function PerfilPage() {
                         key={emoji}
                         onClick={() => handleSelectAvatar(emoji)}
                         className={`text-2xl p-1 rounded-lg transition-all active:scale-90 ${
-                          avatar === emoji
-                            ? "bg-white/25 ring-2 ring-white"
-                            : "hover:bg-white/10"
+                          avatar === emoji ? "bg-white/25 ring-2 ring-white" : "hover:bg-white/10"
                         }`}
                       >
                         {emoji}
@@ -301,22 +295,42 @@ export default function PerfilPage() {
         </div>
       </div>
 
-      {/* Stats grid */}
-      <div>
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Estadísticas</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <StatCard value={predicted} label="Partidos predichos" color="border-blue-200" />
-          <StatCard value={`${exact} ⭐`} label="Exactas (+5pts)" color="border-yellow-300" />
-          <StatCard value={`${correct} ✓`} label="Correctas (+3pts)" color="border-green-300" />
-          <StatCard value={`${wrong} ✗`} label="Falladas" color="border-red-200" />
+      {/* ── P2: Stats compactas ─────────────────────────────────────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-4xl font-black text-gray-900">{myRankEntry?.points ?? 0}</span>
+            <span className="text-sm text-gray-400">pts</span>
+          </div>
+          {myRank && (
+            <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
+              <span>{myRank === 1 ? "🥇" : myRank === 2 ? "🥈" : myRank === 3 ? "🥉" : "🏅"}</span>
+              <span className="text-sm font-bold text-gray-600">#{myRank} de {allScores.length}</span>
+            </div>
+          )}
         </div>
-        <div className="grid grid-cols-2 gap-3 mt-3">
-          <StatCard value={myRankEntry?.points ?? 0} label="Puntos totales" color="border-purple-200" />
-          <StatCard value={favScore} label="Marcador favorito" color="border-gray-200" />
+        <div className="h-px bg-gray-100 mb-4" />
+        <div className="grid grid-cols-3 gap-2 text-center mb-4">
+          <div>
+            <p className="text-2xl font-black text-yellow-500">{exact}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5">⭐ Exactas</p>
+          </div>
+          <div>
+            <p className="text-2xl font-black text-green-600">{correct}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5">✓ Correctas</p>
+          </div>
+          <div>
+            <p className="text-2xl font-black text-red-400">{wrong}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wide mt-0.5">✗ Falladas</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>{predicted} partidos predichos</span>
+          <span>Favorita: <span className="font-bold text-gray-700">{favScore}</span></span>
         </div>
       </div>
 
-      {/* Points por jornada */}
+      {/* ── P4: Puntos por jornada ───────────────────────────────────────────── */}
       {resultsCount > 0 && (
         <div>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Puntos por jornada</h2>
@@ -327,32 +341,54 @@ export default function PerfilPage() {
                   <p className="text-sm font-bold text-gray-800">{label}</p>
                   <p className="text-xs text-gray-400">{jorPred}/{total} predichos · {played} con resultado</p>
                 </div>
-                <div className="text-right">
-                  <span className={`text-lg font-black ${pts > 0 ? "text-green-600" : "text-gray-300"}`}>
-                    {pts} pts
-                  </span>
-                </div>
+                <span className={`text-lg font-black ${pts > 0 ? "text-green-600" : "text-gray-300"}`}>
+                  {pts} pts
+                </span>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Predicción más loca */}
-      {craziestMatch && craziestEntry && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
-          <span className="text-3xl flex-shrink-0">🤡</span>
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-0.5">Tu predicción más loca</p>
-            <p className="font-black text-gray-900 text-sm truncate">
-              {craziestMatch.homeTeam} {craziestEntry.p.g1} – {craziestEntry.p.g2} {craziestMatch.awayTeam}
-            </p>
-            <p className="text-xs text-amber-600">{craziestEntry.total} goles totales 🔥</p>
-          </div>
-        </div>
-      )}
+      {/* ── P3 + P4: Insignias ──────────────────────────────────────────────── */}
+      <div>
+        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Insignias</h2>
 
-      {/* Rivales directos */}
+        {earnedBadges.length === 0 && lockedBadges.length === 0 ? null : (
+          <>
+            {/* Earned */}
+            {earnedBadges.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {earnedBadges.map((badge) => (
+                  <div key={badge.id} className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <span className="text-3xl flex-shrink-0">{badge.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black text-gray-800">{badge.label}</p>
+                      <p className="text-xs text-gray-500 leading-snug mt-0.5">{badge.desc}</p>
+                    </div>
+                    <span className="text-yellow-500 text-lg flex-shrink-0">⭐</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Locked — compact chips */}
+            {lockedBadges.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {lockedBadges.map((badge) => (
+                  <div key={badge.id} className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+                    <span className="text-lg grayscale opacity-40">{badge.emoji}</span>
+                    <span className="text-xs font-semibold text-gray-400">{badge.label}</span>
+                    <span className="text-[10px] text-gray-300">🔒</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* ── P4: Rivales directos ────────────────────────────────────────────── */}
       {(rivalAbove || rivalBelow) && (
         <div>
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Rivales directos</h2>
@@ -377,7 +413,7 @@ export default function PerfilPage() {
                   <p className="text-xs text-gray-400">{rivalBelow.points} pts</p>
                 </div>
                 <span className="text-xs font-bold text-blue-500 bg-blue-50 px-2 py-1 rounded-full">
-                  {(myRankEntry?.points ?? 0) - rivalBelow.points} pts abajo
+                  {(myRankEntry?.points ?? 0) - rivalBelow.points} pts adelante
                 </span>
               </div>
             )}
@@ -385,37 +421,21 @@ export default function PerfilPage() {
         </div>
       )}
 
-      {/* Insignias */}
-      <div>
-        <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Insignias</h2>
-        <div className="space-y-2">
-          {badges.map((badge) => (
-            <div
-              key={badge.id}
-              className={`bg-white rounded-xl border px-4 py-3 flex items-center gap-4 transition-all ${
-                badge.earned
-                  ? "border-green-200 shadow-sm"
-                  : "border-gray-100 opacity-40"
-              }`}
-            >
-              <span className={`text-3xl flex-shrink-0 ${badge.earned ? "" : "grayscale"}`}>
-                {badge.emoji}
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-black text-gray-800">{badge.label}</p>
-                <p className="text-xs text-gray-500 leading-snug mt-0.5">
-                  {badge.earned ? badge.desc : `🔒 ${badge.req}`}
-                </p>
-              </div>
-              {badge.earned && (
-                <span className="text-green-500 text-lg flex-shrink-0">✓</span>
-              )}
-            </div>
-          ))}
+      {/* ── P4: Predicción más loca (decorativa, al fondo) ──────────────────── */}
+      {craziestMatch && craziestEntry && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center gap-3">
+          <span className="text-3xl flex-shrink-0">🤡</span>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-amber-700 uppercase tracking-wide mb-0.5">Tu predicción más loca</p>
+            <p className="font-black text-gray-900 text-sm truncate">
+              {craziestMatch.homeTeam} {craziestEntry.p.g1} – {craziestEntry.p.g2} {craziestMatch.awayTeam}
+            </p>
+            <p className="text-xs text-amber-600">{craziestEntry.total} goles totales 🔥</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Acciones */}
+      {/* ── Acciones ────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         <Link
           href="/quiniela"
