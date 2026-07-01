@@ -3,6 +3,7 @@ import { Geist } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
 import { TopNav, BottomNav } from "@/components/NavLinks";
+import MexicoAnimation from "@/components/MexicoAnimation";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </footer>
 
         <BottomNav />
+        <MexicoAnimation />
       </body>
     </html>
   );
