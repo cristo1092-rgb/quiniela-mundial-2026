@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { PlayerScore, Prediction, Result, calcMatchPoints, getResultLabel } from "@/lib/scoring";
+import { PlayerScore, Prediction, Result, calcMatchPoints } from "@/lib/scoring";
 import { MATCHES } from "@/lib/matches";
 
 interface Props {
@@ -17,6 +17,7 @@ interface Props {
 
 export default function RankingTable({ scores, currentPlayer, allPredictions, results, avatars, movement, knockoutTeams }: Props) {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [historyPlayer, setHistoryPlayer] = useState<string | null>(null);
 
   if (scores.length === 0) {
     return (
@@ -28,95 +29,111 @@ export default function RankingTable({ scores, currentPlayer, allPredictions, re
     );
   }
 
+  const hasDetail = !!(allPredictions && results);
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-gray-50 text-gray-600 text-xs uppercase tracking-wider">
-            <th className="px-3 py-3 text-left w-8">#</th>
-            <th className="px-3 py-3 text-left">Jugador</th>
-            <th className="px-3 py-3 text-right">Puntos</th>
-            <th className="px-3 py-3 text-right hidden sm:table-cell">Aciertos</th>
-            <th className="px-3 py-3 text-right hidden sm:table-cell">Jugados</th>
-            <th className="px-3 py-3 text-right hidden md:table-cell">%</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {scores.map((player, index) => {
-            const isCurrentPlayer = player.name === currentPlayer;
-            const pct = player.played > 0
-              ? Math.round((player.correct / player.played) * 100)
-              : 0;
-            const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : null;
-            const isExpanded = expanded === player.name;
-            const hasDetail = !!(allPredictions && results);
+    <div className="divide-y divide-gray-100">
+      {scores.map((player, index) => {
+        const isCurrentPlayer = player.name === currentPlayer;
+        const medal = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : null;
+        const isExpanded = expanded === player.name;
+        const showHistory = historyPlayer === player.name;
+        const move = movement?.[player.name];
 
-            // Build per-match breakdown for this player
-            const playerPreds = allPredictions?.[player.name] ?? {};
-            const playedMatches = results
-              ? MATCHES.filter((m) => results[m.id] && playerPreds[m.id])
-              : [];
+        const playerPreds = allPredictions?.[player.name] ?? {};
+        const playedMatches = results
+          ? MATCHES.filter((m) => results[m.id] && playerPreds[m.id])
+          : [];
 
-            return [
-              <tr
-                key={player.name}
-                onClick={() => hasDetail && setExpanded(isExpanded ? null : player.name)}
-                className={`transition-colors ${
-                  isCurrentPlayer
-                    ? "bg-green-50 border-l-4 border-green-500"
-                    : "hover:bg-gray-50"
-                } ${hasDetail ? "cursor-pointer select-none" : ""}`}
-              >
-                <td className="px-3 py-3 font-bold text-gray-500">
-                  <span className="flex items-center gap-1">
-                    {medal ?? index + 1}
-                    {movement && movement[player.name] !== undefined && movement[player.name] !== 0 && (
-                      movement[player.name] > 0
-                        ? <span className="text-[10px] text-green-600 font-black">▲{movement[player.name]}</span>
-                        : <span className="text-[10px] text-red-500 font-black">▼{Math.abs(movement[player.name])}</span>
-                    )}
-                  </span>
-                </td>
-                <td className="px-3 py-3">
-                  <div className="flex items-center gap-1.5">
-                    {avatars?.[player.name] && (
-                      <span className="text-xl flex-shrink-0">{avatars[player.name]}</span>
-                    )}
-                    <span className={`font-semibold truncate max-w-[130px] block ${isCurrentPlayer ? "text-green-700" : "text-gray-800"}`}>
-                      {player.name}
-                      {isCurrentPlayer && <span className="ml-1 text-xs text-green-600">(tú)</span>}
-                    </span>
-                    {hasDetail && (
-                      <span className={`text-gray-300 text-xs transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>▼</span>
-                    )}
-                  </div>
-                </td>
-                <td className="px-3 py-3 text-right">
-                  <span className="font-bold text-gray-900 text-base">{player.points}</span>
-                  <span className="text-gray-400 text-xs ml-1">pts</span>
-                </td>
-                <td className="px-3 py-3 text-right text-gray-600 hidden sm:table-cell">
-                  {player.correct}
-                </td>
-                <td className="px-3 py-3 text-right text-gray-500 hidden sm:table-cell">
-                  {player.played}
-                </td>
-                <td className="px-3 py-3 text-right hidden md:table-cell">
-                  <span className={`font-medium ${pct >= 60 ? "text-green-600" : pct >= 40 ? "text-yellow-600" : "text-gray-500"}`}>
-                    {pct}%
-                  </span>
-                </td>
-              </tr>,
+        return (
+          <div key={player.name}>
+            {/* Main row */}
+            <div
+              onClick={() => {
+                if (!hasDetail) return;
+                if (isExpanded) {
+                  setExpanded(null);
+                  setHistoryPlayer(null);
+                } else {
+                  setExpanded(player.name);
+                  setHistoryPlayer(null);
+                }
+              }}
+              className={`flex items-center gap-3 px-4 py-3.5 transition-colors ${
+                isCurrentPlayer
+                  ? "bg-green-50 border-l-4 border-green-500"
+                  : "hover:bg-gray-50"
+              } ${hasDetail ? "cursor-pointer select-none" : ""}`}
+            >
+              {/* Position + movement */}
+              <div className="w-8 flex-shrink-0 flex items-center gap-0.5">
+                <span className="text-sm font-bold text-gray-500">{medal ?? index + 1}</span>
+                {move !== undefined && move !== 0 && (
+                  move > 0
+                    ? <span className="text-[10px] text-green-600 font-black">▲{move}</span>
+                    : <span className="text-[10px] text-red-500 font-black">▼{Math.abs(move)}</span>
+                )}
+              </div>
 
-              // Expanded detail row
-              isExpanded && hasDetail && (
-                <tr key={`${player.name}-detail`} className={isCurrentPlayer ? "bg-green-50" : "bg-gray-50"}>
-                  <td colSpan={6} className="px-3 py-3">
-                    {playedMatches.length === 0 ? (
-                      <p className="text-xs text-gray-400 italic text-center py-2">Ningún partido jugado aún.</p>
+              {/* Avatar + name */}
+              <div className="flex-1 flex items-center gap-2 min-w-0">
+                {avatars?.[player.name] && (
+                  <span className="text-xl flex-shrink-0">{avatars[player.name]}</span>
+                )}
+                <span className={`font-semibold truncate ${isCurrentPlayer ? "text-green-700" : "text-gray-800"}`}>
+                  {player.name}
+                  {isCurrentPlayer && <span className="ml-1 text-xs text-green-600 font-normal">(tú)</span>}
+                </span>
+                {hasDetail && (
+                  <span className={`text-gray-300 text-xs flex-shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}>▼</span>
+                )}
+              </div>
+
+              {/* Points */}
+              <div className="flex-shrink-0 text-right">
+                <span className="text-xl font-black text-gray-900">{player.points}</span>
+                <span className="text-xs text-gray-400 ml-0.5">pts</span>
+              </div>
+            </div>
+
+            {/* Stats summary (first tap) */}
+            {isExpanded && hasDetail && (
+              <div className={`px-4 py-3 border-t border-gray-100 ${isCurrentPlayer ? "bg-green-50/60" : "bg-gray-50"}`}>
+                {playedMatches.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic text-center py-1">Ningún partido jugado aún.</p>
+                ) : (
+                  <>
+                    {/* 4-stat summary */}
+                    <div className="grid grid-cols-4 gap-1 text-center mb-3">
+                      <div>
+                        <p className="text-lg font-black text-gray-900">{player.points}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Pts</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-black text-yellow-500">{player.exact}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Exactos</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-black text-green-600">{player.correct}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Correctos</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-black text-gray-500">{player.played}</p>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-wide">Jugados</p>
+                      </div>
+                    </div>
+
+                    {/* History toggle */}
+                    {!showHistory ? (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setHistoryPlayer(player.name); }}
+                        className="text-xs text-green-600 font-semibold hover:underline w-full text-center py-0.5"
+                      >
+                        Ver partidos →
+                      </button>
                     ) : (
-                      <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                        <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">Historial partido por partido</p>
+                      <div className="space-y-1.5 mt-1">
+                        <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Historial</p>
                         {playedMatches.map((m) => {
                           const pred = playerPreds[m.id];
                           const res = results![m.id];
@@ -149,13 +166,13 @@ export default function RankingTable({ scores, currentPlayer, allPredictions, re
                         })}
                       </div>
                     )}
-                  </td>
-                </tr>
-              ),
-            ];
-          })}
-        </tbody>
-      </table>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
