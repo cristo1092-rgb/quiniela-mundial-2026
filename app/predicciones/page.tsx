@@ -2,33 +2,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { ref, onValue } from "firebase/database";
-import { MATCHES, Match, KNOCKOUT_STAGES, GROUP_STAGES, getMatchKickoffUTC, Stage } from "@/lib/matches";
+import { MATCHES, Match, KNOCKOUT_STAGES, GROUP_STAGES, getMatchKickoffUTC, Stage, Jornada, JORNADA_LABELS, JORNADA_RANGES, getCurrentJornada } from "@/lib/matches";
 import Flag from "@/components/Flag";
 import { Prediction, Result, KnockoutDecision, getResultLabel } from "@/lib/scoring";
 import { isFirebaseConfigured, getLocalResults, getLocalKnockoutTeams, getLocalKnockoutWinners } from "@/lib/localFallback";
 import { computeAutoKnockoutTeams } from "@/lib/standings";
-
-type JornadaTab = 1 | 2 | 3 | "elim";
-
-const JORNADA_RANGES: Record<1 | 2 | 3, [string, string]> = {
-  1: ["2026-06-11", "2026-06-17"],
-  2: ["2026-06-18", "2026-06-23"],
-  3: ["2026-06-24", "2026-06-27"],
-};
-const JORNADA_LABELS: Record<JornadaTab, string> = {
-  1: "Jornada 1",
-  2: "Jornada 2",
-  3: "Jornada 3",
-  elim: "Eliminatorias",
-};
-
-function getCurrentJornada(): JornadaTab {
-  const today = new Date().toISOString().slice(0, 10);
-  if (today < "2026-06-18") return 1;
-  if (today < "2026-06-24") return 2;
-  if (today <= "2026-06-27") return 3;
-  return "elim";
-}
 
 function formatDateHeader(dateStr: string): string {
   const d = new Date(`${dateStr}T12:00:00`);
@@ -41,7 +19,10 @@ export default function PrediccionesPage() {
   const [knockoutTeams, setKnockoutTeams] = useState<Record<string, string>>({});
   const [knockoutWinners, setKnockoutWinners] = useState<Record<string, "home" | "away">>({});
   const [knockoutDecisions, setKnockoutDecisions] = useState<Record<string, KnockoutDecision>>({});
-  const [activeJornada, setActiveJornada] = useState<JornadaTab>(getCurrentJornada);
+  const [activeJornada, setActiveJornada] = useState<Jornada | "hoy">(() => {
+    const today = new Date().toLocaleDateString("sv-SE");
+    return MATCHES.some((m) => m.date === today) ? "hoy" : getCurrentJornada();
+  });
 
   useEffect(() => {
     setResults(getLocalResults());
@@ -88,7 +69,10 @@ export default function PrediccionesPage() {
   // Get matches for the active jornada, sorted by date+time
   function getJornadaMatches() {
     let base;
-    if (activeJornada === "elim") {
+    if (activeJornada === "hoy") {
+      const today = new Date().toLocaleDateString("sv-SE");
+      base = MATCHES.filter((m) => m.date === today).map(resolveMatch);
+    } else if (activeJornada === "elim") {
       base = MATCHES
         .filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number]))
         .map(resolveMatch);
@@ -128,40 +112,58 @@ export default function PrediccionesPage() {
       </div>
 
       {/* Jornada tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-4 px-4 scrollbar-hide">
-        {([1, 2, 3, "elim"] as JornadaTab[]).map((j) => {
-          const jMatches = (() => {
-            if (j === "elim") return MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number])).map(resolveMatch);
-            const [start, end] = JORNADA_RANGES[j];
-            return MATCHES.filter((m) => GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number]) && m.date >= start && m.date <= end);
-          })();
-          const withResult = jMatches.filter((m) => results[m.id]).length;
-          return (
-            <button
-              key={j}
-              onClick={() => setActiveJornada(j)}
-              className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeJornada === j
-                  ? "bg-green-600 text-white"
-                  : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-              }`}
-            >
-              {JORNADA_LABELS[j]}
-              {withResult > 0 && activeJornada !== j && (
-                <span className="ml-1.5 text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
-                  {withResult}/{jMatches.length}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      {(() => {
+        const today = new Date().toLocaleDateString("sv-SE");
+        const hasTodayMatches = MATCHES.some((m) => m.date === today);
+        return (
+          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 -mx-4 px-4 scrollbar-hide">
+            {hasTodayMatches && (
+              <button
+                onClick={() => setActiveJornada("hoy")}
+                className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  activeJornada === "hoy"
+                    ? "bg-green-600 text-white"
+                    : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                }`}
+              >
+                🔥 Hoy
+              </button>
+            )}
+            {([1, 2, 3, "elim"] as const).map((j) => {
+              const jMatches = (() => {
+                if (j === "elim") return MATCHES.filter((m) => KNOCKOUT_STAGES.includes(m.stage as typeof KNOCKOUT_STAGES[number])).map(resolveMatch);
+                const [start, end] = JORNADA_RANGES[j];
+                return MATCHES.filter((m) => GROUP_STAGES.includes(m.stage as typeof GROUP_STAGES[number]) && m.date >= start && m.date <= end);
+              })();
+              const withResult = jMatches.filter((m) => results[m.id]).length;
+              return (
+                <button
+                  key={j}
+                  onClick={() => setActiveJornada(j)}
+                  className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    activeJornada === j
+                      ? "bg-green-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  {JORNADA_LABELS[j]}
+                  {withResult > 0 && activeJornada !== j && (
+                    <span className="ml-1.5 text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full">
+                      {withResult}/{jMatches.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Jornada subtitle */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-bold text-gray-700">
-          {JORNADA_LABELS[activeJornada]}
-          {activeJornada !== "elim" && (
+          {activeJornada === "hoy" ? "Partidos de hoy" : JORNADA_LABELS[activeJornada]}
+          {activeJornada !== "elim" && activeJornada !== "hoy" && (
             <span className="text-sm font-normal text-gray-400 ml-2">
               {(() => {
                 const [s, e] = JORNADA_RANGES[activeJornada];

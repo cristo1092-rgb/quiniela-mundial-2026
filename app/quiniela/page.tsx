@@ -51,7 +51,10 @@ export default function QuinielaPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [allPredictions, setAllPredictions] = useState<Record<string, Record<string, Prediction>>>({});
   const [viewMode, setViewMode] = useState<"stage" | "jornada">("jornada");
-  const [activeJornada, setActiveJornada] = useState<1 | 2 | 3 | "elim">(1);
+  const [activeJornada, setActiveJornada] = useState<Jornada | "hoy">(() => {
+    const today = new Date().toLocaleDateString("sv-SE");
+    return MATCHES.some((m) => m.date === today) ? "hoy" : getCurrentJornada();
+  });
   const touchStartX = useRef<number | null>(null);
   const allStagesRef = useRef([...GROUP_STAGES, ...KNOCKOUT_STAGES]);
   const prevResultCount = useRef(0);
@@ -242,7 +245,13 @@ export default function QuinielaPage() {
   }
 
   // Jornada helpers (rangos y filtro base viven en lib/matches.ts)
-  function getJornadaMatches(jornada: Jornada): Match[] {
+  function getJornadaMatches(jornada: Jornada | "hoy"): Match[] {
+    if (jornada === "hoy") {
+      const today = new Date().toLocaleDateString("sv-SE");
+      return MATCHES.map(resolveMatch)
+        .filter((m) => m.date === today)
+        .sort((a, b) => a.time.localeCompare(b.time));
+    }
     return getJornadaMatchesBase(jornada).map(resolveMatch).sort((a, b) =>
       a.date !== b.date ? a.date.localeCompare(b.date) : a.time.localeCompare(b.time)
     );
@@ -263,7 +272,9 @@ export default function QuinielaPage() {
   // Share my predictions via WhatsApp
   function shareMyQuiniela() {
     const matches = viewMode === "stage" ? stageMatches : getJornadaMatches(activeJornada);
-    const label = viewMode === "stage" ? STAGE_LABELS[activeStage] : JORNADA_LABELS[activeJornada];
+    const label = viewMode === "stage"
+      ? STAGE_LABELS[activeStage]
+      : activeJornada === "hoy" ? "Partidos de hoy" : JORNADA_LABELS[activeJornada];
     const lines = matches.map((m) => {
       const p = predictions[m.id];
       const score = p ? `${p.g1}-${p.g2}` : "—";
@@ -348,7 +359,7 @@ export default function QuinielaPage() {
             <p className="text-xs text-amber-600">Cada partido cierra 30 min antes de iniciar</p>
           </div>
           <button
-            onClick={() => setViewMode("jornada")}
+            onClick={() => { setViewMode("jornada"); setActiveJornada(currentJornada); }}
             className="flex-shrink-0 text-xs bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 rounded-lg transition-colors"
           >
             Ver →
@@ -356,12 +367,14 @@ export default function QuinielaPage() {
         </div>
       )}
 
-      {/* Hoy juegan */}
-      <TodayMatches
-        matches={MATCHES.map(resolveMatch)}
-        predictions={predictions}
-        results={results}
-      />
+      {/* Hoy juegan — ocultar cuando el tab "Hoy" ya muestra los mismos partidos */}
+      {!(viewMode === "jornada" && activeJornada === "hoy") && (
+        <TodayMatches
+          matches={MATCHES.map(resolveMatch)}
+          predictions={predictions}
+          results={results}
+        />
+      )}
 
       {/* View mode toggle */}
       <div className="flex items-center gap-2 mb-4">
@@ -500,38 +513,56 @@ export default function QuinielaPage() {
       ) : (
         <>
           {/* Jornada tabs */}
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-            {([1, 2, 3, "elim"] as const).map((j) => {
-              const jMatches = getJornadaMatches(j);
-              const predicted = jMatches.filter((m) => predictions[m.id]).length;
-              const hasResult = jMatches.some((m) => results[m.id]);
-              return (
-                <button
-                  key={j}
-                  onClick={() => setActiveJornada(j)}
-                  className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
-                    activeJornada === j
-                      ? "bg-green-600 text-white"
-                      : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
-                  }`}
-                >
-                  {JORNADA_LABELS[j]}
-                  {activeJornada !== j && (
-                    <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
-                      hasResult ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {predicted}/{jMatches.length}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          {(() => {
+            const today = new Date().toLocaleDateString("sv-SE");
+            const hasTodayMatches = MATCHES.some((m) => m.date === today);
+            return (
+              <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+                {hasTodayMatches && (
+                  <button
+                    onClick={() => setActiveJornada("hoy")}
+                    className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                      activeJornada === "hoy"
+                        ? "bg-green-600 text-white"
+                        : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                    }`}
+                  >
+                    🔥 Hoy
+                  </button>
+                )}
+                {([1, 2, 3, "elim"] as const).map((j) => {
+                  const jMatches = getJornadaMatches(j);
+                  const predicted = jMatches.filter((m) => predictions[m.id]).length;
+                  const hasResult = jMatches.some((m) => results[m.id]);
+                  return (
+                    <button
+                      key={j}
+                      onClick={() => setActiveJornada(j)}
+                      className={`flex-shrink-0 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
+                        activeJornada === j
+                          ? "bg-green-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+                      }`}
+                    >
+                      {JORNADA_LABELS[j]}
+                      {activeJornada !== j && (
+                        <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                          hasResult ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-500"
+                        }`}>
+                          {predicted}/{jMatches.length}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })()}
 
           {/* Jornada header */}
           <h3 className="text-lg font-bold text-gray-800 mb-4">
-            {JORNADA_LABELS[activeJornada]}
-            {activeJornada !== "elim" && (
+            {activeJornada === "hoy" ? "Partidos de hoy" : JORNADA_LABELS[activeJornada]}
+            {activeJornada !== "elim" && activeJornada !== "hoy" && (
               <span className="text-sm font-normal text-gray-400 ml-2">
                 {(() => {
                   const [start, end] = JORNADA_RANGES[activeJornada];
