@@ -146,6 +146,28 @@ export default function RankingPage() {
         </div>
       </div>
 
+      {/* Premio */}
+      <div className="bg-gradient-to-br from-yellow-400 to-amber-500 rounded-2xl p-4 mb-5 shadow-md">
+        <p className="text-[10px] font-black uppercase tracking-widest text-yellow-900/70 mb-3">🏆 Premio final</p>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="bg-white/20 rounded-xl py-2 px-1">
+            <p className="text-xl">🥇</p>
+            <p className="text-lg font-black text-white leading-tight">$6,300</p>
+            <p className="text-[10px] text-yellow-900/70 font-semibold">70%</p>
+          </div>
+          <div className="bg-white/20 rounded-xl py-2 px-1">
+            <p className="text-xl">🥈</p>
+            <p className="text-lg font-black text-white leading-tight">$1,800</p>
+            <p className="text-[10px] text-yellow-900/70 font-semibold">20%</p>
+          </div>
+          <div className="bg-white/20 rounded-xl py-2 px-1">
+            <p className="text-xl">🥉</p>
+            <p className="text-lg font-black text-white leading-tight">$900</p>
+            <p className="text-[10px] text-yellow-900/70 font-semibold">10%</p>
+          </div>
+        </div>
+      </div>
+
       {/* View selector: total vs por jornada / eliminatorias */}
       <div className="flex items-center gap-2 mb-4 flex-wrap">
         {([["total", "Total"], [1, "J1"], [2, "J2"], [3, "J3"], ["elim", "Elim"]] as const).map(([v, label]) => (
