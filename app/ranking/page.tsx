@@ -15,6 +15,7 @@ export default function RankingPage() {
   const [currentPlayer, setCurrentPlayer] = useState<string | undefined>();
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [avatars, setAvatars] = useState<Record<string, string>>({});
+  const [knockoutWinners, setKnockoutWinners] = useState<Record<string, "home" | "away">>({});
 
   useEffect(() => {
     const stored = localStorage.getItem("quinielaPlayer");
@@ -52,12 +53,15 @@ export default function RankingPage() {
       setResults(snap.val() ?? {});
       setLastUpdate(new Date());
     });
-    return () => { unsub(); unsubAv(); window.removeEventListener("storage", storageHandler); };
+    const unsubKOW = onValue(ref(db, "knockoutWinners"), (snap) => {
+      setKnockoutWinners(snap.val() ?? {});
+    });
+    return () => { unsub(); unsubAv(); unsubKOW(); window.removeEventListener("storage", storageHandler); };
   }, []);
 
   const [view, setView] = useState<"total" | Jornada>("total");
 
-  const knockoutTeams = useMemo(() => computeAutoKnockoutTeams(results).teams, [results]);
+  const knockoutTeams = useMemo(() => computeAutoKnockoutTeams(results, knockoutWinners).teams, [results, knockoutWinners]);
 
   function resultsOfJornada(j: Jornada): Record<string, Result> {
     const ids = new Set(getJornadaMatches(j).map((m) => m.id));

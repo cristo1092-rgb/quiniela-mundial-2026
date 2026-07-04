@@ -29,6 +29,7 @@ export default function AdminPage() {
 
   const [results, setResults] = useState<Record<string, Result>>({});
   const [knockoutTeams, setKnockoutTeams] = useState<Record<string, string>>({});
+  const [knockoutWinners, setKnockoutWinners] = useState<Record<string, "home" | "away">>({});
 
   const [selectedMatchId, setSelectedMatchId] = useState("");
   const [g1, setG1] = useState("");
@@ -79,8 +80,9 @@ export default function AdminPage() {
   useEffect(() => {
     if (!authed) return;
     if (!isFirebaseConfigured()) return;
-    const unsub = onValue(ref(db, "knockoutTeams"), (snap) => setKnockoutTeams(snap.val() ?? {}));
-    return unsub;
+    const unsubKT = onValue(ref(db, "knockoutTeams"), (snap) => setKnockoutTeams(snap.val() ?? {}));
+    const unsubKW = onValue(ref(db, "knockoutWinners"), (snap) => setKnockoutWinners(snap.val() ?? {}));
+    return () => { unsubKT(); unsubKW(); };
   }, [authed]);
 
   // Listen for localStorage changes from other tabs
@@ -294,7 +296,7 @@ export default function AdminPage() {
   }
 
   // Auto-computed + manual merged knockout teams (same priority as quiniela page)
-  const { teams: autoKnockoutTeams } = useMemo(() => computeAutoKnockoutTeams(results), [results]);
+  const { teams: autoKnockoutTeams } = useMemo(() => computeAutoKnockoutTeams(results, knockoutWinners), [results, knockoutWinners]);
   const mergedKnockoutTeams = useMemo(
     () => ({ ...autoKnockoutTeams, ...knockoutTeams }),
     [autoKnockoutTeams, knockoutTeams]
